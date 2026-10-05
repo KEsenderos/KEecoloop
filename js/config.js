@@ -1,0 +1,37 @@
+/* js/config.js / 定数（RE.Config） / 仕様書 v1.1 7章 / 版 1.4.1 */
+(function () {
+  'use strict';
+  window.RE = window.RE || {};
+
+  RE.Config = Object.freeze({
+    APP_NAME: 'KEecoloop',
+    APP_VERSION: '1.4.1',
+    ENGINE_TYPE: 'WEB_AUDIO',
+    MOVE_SEC_MIN: 1,
+    MOVE_SEC_MAX: 60,
+    MOVE_SEC_DEFAULT: 5,
+    START_DEFAULT_SEC: 0,
+    END_DEFAULT_SEC: 5,
+    TIME_UNITS_SEC: Object.freeze([600, 60, 10, 1]),
+    OVERLAP_SEC: 1,
+    REMOTE_DEBOUNCE_MS: 300,
+    PRESS_MIN_MS: 150,
+    UI_REFRESH_MS: 250,
+    MINUTES_MAX_DIGITS: 2,
+    BAR_MARKER_MIN_PX: 8,
+    KEEPALIVE_SILENT_AUDIO: true,
+    STORAGE_KEY_MOVE: 're.moveSec',
+    PLAYER_STATE: Object.freeze({ NO_FILE: 'NO_FILE', STOPPED: 'STOPPED', PLAYING: 'PLAYING', PAUSED: 'PAUSED' }),
+    ERR: Object.freeze({ DECODE: 'DECODE', PLAY_BLOCKED: 'PLAY_BLOCKED', INTERRUPTED: 'INTERRUPTED' }),
+    MSG: Object.freeze({
+      FILE_LOADING: 'ファイルを読み込み中…',
+      FILE_ERROR: '読み込めませんでした。mp3・m4a・wav形式か確認してください',
+      NO_FILE_SELECTED: 'まず ⏏ でファイルを選んでください',
+      MOVE_SEC_INVALID: '移動時間は1〜60の数字で入力してください',
+      MOVE_SEC_CLAMPED: '1〜60の範囲に直しました',
+      REACHED_END: 'ファイルの終わりに達しました',
+      PLAY_BLOCKED: '再生できませんでした。もう一度再生ボタンを押してください',
+      INTERRUPTED: '再生が中断されました。再生ボタンで再開できます'
+    })
+  });
+})();

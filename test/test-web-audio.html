@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="検証B">
+<title>KEecoloop 検証B（Web Audio方式）</title>
+<!-- test-web-audio.html / Phase 0 検証ページ B案 / 仕様書 v0.4 5.5・5.6章 -->
+<style>
+body{font-family:-apple-system,"Hiragino Sans",sans-serif;margin:0 auto;padding:16px;max-width:480px;font-size:18px;line-height:1.5;background:#fff;color:#111}
+h1{font-size:20px;margin:0 0 8px}
+.row{display:flex;gap:8px;align-items:center;margin:10px 0;flex-wrap:wrap}
+button{font-size:18px;min-height:64px;padding:0 16px;border-radius:12px;border:2px solid #1a73e8;background:#e8f0fe;color:#0b3d91;font-weight:bold}
+button:disabled{opacity:.4}
+button.wide{width:100%}
+button.flex{flex:1}
+input[type=number],input[type=text]{font-size:18px;min-height:48px;padding:0 8px;border:1px solid #888;border-radius:8px;width:5.5em;box-sizing:border-box}
+input[readonly]{background:#eee}
+#txt-filename{word-break:break-all;flex:1}
+#txt-message{min-height:1.6em;color:#b00020;font-weight:bold}
+#txt-verdict{margin:8px 0;padding:8px;border-radius:8px;background:#f3f3f3;min-height:1.6em}
+pre{font-size:13px;background:#f6f6f6;padding:8px;border-radius:8px;height:200px;overflow:auto;white-space:pre-wrap;user-select:text;-webkit-user-select:text}
+details{margin:12px 0;font-size:15px}
+.small{font-size:14px;color:#444}
+</style>
+</head>
+<body>
+<h1>検証B：Web Audio方式</h1>
+<div class="row">
+  <button id="btn-eject" type="button" aria-label="ファイルを選ぶ">
+    <svg viewBox="0 0 24 24" width="32" height="32" aria-hidden="true"><path d="M12 5 3 15h18z" fill="currentColor"/><rect x="3" y="17" width="18" height="3" fill="currentColor"/></svg>
+  </button>
+  <span id="txt-filename">ファイル未選択</span>
+  <input id="input-file" type="file" hidden>
+</div>
+<div class="row"><span id="txt-duration">全体 --:--</span>　<span id="txt-position">位置 --:--</span>　<span id="txt-state">状態 NO_FILE</span></div>
+<div class="small" id="txt-decode">展開後のサイズ：-</div>
+<div class="row">
+  <label>間隔 <input id="input-interval" type="number" min="1" max="60" step="1" inputmode="numeric" value="5" disabled> 秒</label>
+</div>
+<div class="row">
+  <label>開始 <input id="input-start" type="text" inputmode="numeric" value="00:00" disabled></label>
+  <label>終了 <input id="txt-end" type="text" value="00:05" readonly></label>
+</div>
+<div class="row">
+  <button id="btn-play" class="flex" type="button" disabled>▶ 再生</button>
+  <button id="btn-stop" class="flex" type="button" disabled>■ 停止</button>
+</div>
+<button id="btn-next" class="wide" type="button" disabled>区間移動 ▶▶</button>
+<div class="row"><label><input id="chk-keepalive" type="checkbox" checked style="width:24px;height:24px"> 無音のaudioを併用（消音スイッチ・ロック画面の対策。次の再生から有効）</label></div>
+<div id="txt-message"></div>
+<div id="txt-verdict">判定：まだありません</div>
+<div class="small" id="txt-stats">ループ回数 0 ／ 音が止まっていた時間 -</div>
+<button id="btn-copy" class="wide" type="button" style="min-height:48px;margin-top:8px">ログをコピー</button>
+<pre id="txt-log"></pre>
+<details open>
+<summary>試す手順</summary>
+<ol>
+<li>⏏でGoogleドライブの音声を選ぶ。読込にかかった時間と、展開後のサイズが表示される（V-6）。</li>
+<li>再生し、0〜5秒が繰り返されるか耳で確認。継ぎ目の途切れがないか確認（V-1）。</li>
+<li>再生したまま、サイドボタンで画面をロックして3分待つ（V-2）。</li>
+<li>ロックを解除し、上の「判定」を見る。「止まっていない」なら合格、「止まっていた」なら不合格の疑い。</li>
+<li>ロック画面の再生／一時停止／次へを試す（V-4）。</li>
+<li>Safariの共有→「ホーム画面に追加」で追加し、そのアイコンから起動して同じ確認をする（V-3）。</li>
+<li>消音スイッチをオンにして音が出るか確認（V-5）。「無音のaudioを併用」のオン／オフで比べる。</li>
+<li>20分のファイルで、読込みとループができ、アプリが落ちないか確認（V-6）。</li>
+<li>終わったら「ログをコピー」を押し、結果をチャットに貼る。</li>
+</ol>
+</details>
+<script>
+(function () {
+  'use strict';
+  var LOG_MAX = 120, UI_MS = 250;
+  var $ = function (id) { return document.getElementById(id); };
+  var AC = window.AudioContext || window.webkitAudioContext;
+  var ctx = null, buf = null, src = null, keep = null, keepUrl = null;
+  var fileName = '', duration = 0, interval = 5, start = 0, end = 5, state = 'NO_FILE';
+  var segCtx = 0, segWall = 0, segOffset = 0, pausedPos = 0, wallSum = 0, ctxSum = 0, loopBase = 0, hiddenAt = 0;
+  var logLines = [];
+
+  function pad2(n) { return (n < 10 ? '0' : '') + n; }
+  function fmt(sec) { sec = Math.max(0, Math.floor(sec)); return pad2(Math.floor(sec / 60)) + ':' + pad2(sec % 60); }
+  function fmt1(sec) { return fmt(sec) + '.' + Math.floor((sec % 1) * 10); }
+  function toHalf(t) { return String(t).replace(/[０-９]/g, function (c) { return String.fromCharCode(c.charCodeAt(0) - 65248); }).replace(/：/g, ':'); }
+  function parseTime(t) { var m = /^(\d{1,3}):([0-5]?\d)$/.exec(toHalf(t).trim()); return m ? (parseInt(m[1], 10) * 60 + parseInt(m[2], 10)) : null; }
+  function msg(t) { $('txt-message').textContent = t || ''; }
+  function log(t) {
+    var d = new Date();
+    logLines.push(pad2(d.getMinutes()) + ':' + pad2(d.getSeconds()) + ' ' + t);
+    if (logLines.length > LOG_MAX) logLines.shift();
+    var el = $('txt-log'); el.textContent = logLines.join('\n'); el.scrollTop = el.scrollHeight;
+  }
+  function recalcEnd() { end = Math.min(start + interval, duration); $('txt-end').value = fmt(end); }
+  function setControls(on) { ['btn-play', 'btn-stop', 'btn-next', 'input-interval', 'input-start'].forEach(function (id) { $(id).disabled = !on; }); }
+
+  function elapsedCtx() { return state === 'PLAYING' && ctx ? ctx.currentTime - segCtx : 0; }
+  function getPos() {
+    if (state === 'PLAYING') {
+      var len = end - start; if (len <= 0) return start;
+      var run = (segOffset - start) + elapsedCtx();
+      return start + (run % len);
+    }
+    return state === 'PAUSED' ? pausedPos : start;
+  }
+  function getLoops() {
+    if (state !== 'PLAYING') return loopBase;
+    var len = end - start; if (len <= 0) return loopBase;
+    return loopBase + Math.floor(((segOffset - start) + elapsedCtx()) / len);
+  }
+  function gapSec() {
+    var w = wallSum, c = ctxSum;
+    if (state === 'PLAYING' && ctx) { w += Date.now() - segWall; c += (ctx.currentTime - segCtx) * 1000; }
+    return (w - c) / 1000;
+  }
+  function render() {
+    $('txt-filename').textContent = fileName || 'ファイル未選択';
+    $('txt-duration').textContent = '全体 ' + (duration ? fmt(duration) : '--:--');
+    $('txt-state').textContent = '状態 ' + state;
+    $('btn-play').textContent = state === 'PLAYING' ? '⏸ 一時停止' : '▶ 再生';
+    $('input-start').value = fmt(start);
+    $('txt-end').value = fmt(end);
+    $('input-interval').value = interval;
+    updateStats();
+  }
+  function updateStats() {
+    $('txt-stats').textContent = 'ループ回数 ' + getLoops() + ' ／ 音が止まっていた時間 ' + Math.max(0, gapSec()).toFixed(1) + ' 秒';
+  }
+  function setState(s) { state = s; render(); updateMediaSession(); }
+
+  function makeSilentWavUrl() {
+    var n = 8000, b = new ArrayBuffer(44 + n), v = new DataView(b), i;
+    function w(o, s) { for (var k = 0; k < s.length; k++) v.setUint8(o + k, s.charCodeAt(k)); }
+    w(0, 'RIFF'); v.setUint32(4, 36 + n, true); w(8, 'WAVE'); w(12, 'fmt '); v.setUint32(16, 16, true);
+    v.setUint16(20, 1, true); v.setUint16(22, 1, true); v.setUint32(24, 8000, true); v.setUint32(28, 8000, true);
+    v.setUint16(32, 1, true); v.setUint16(34, 8, true); w(36, 'data'); v.setUint32(40, n, true);
+    for (i = 0; i < n; i++) v.setUint8(44 + i, 128);
+    return URL.createObjectURL(new Blob([b], { type: 'audio/wav' }));
+  }
+  function keepStart() {
+    if (!$('chk-keepalive').checked) { keepStop(); return; }
+    if (!keep) { keepUrl = makeSilentWavUrl(); keep = new Audio(keepUrl); keep.loop = true; }
+    var p = keep.play(); if (p && p.catch) p.catch(function (e) { log('無音audio再生失敗 ' + e.name); });
+  }
+  function keepStop() { if (keep) keep.pause(); }
+
+  function destroySource() { if (src) { try { src.onended = null; src.stop(); } catch (e) {} try { src.disconnect(); } catch (e2) {} src = null; } }
+  function closeSegment() {
+    if (state === 'PLAYING' && ctx) { wallSum += Date.now() - segWall; ctxSum += (ctx.currentTime - segCtx) * 1000; }
+  }
+  function startSource(offset) {
+    destroySource();
+    src = ctx.createBufferSource(); src.buffer = buf; src.loop = true; src.loopStart = start; src.loopEnd = end;
+    src.connect(ctx.destination);
+    segCtx = ctx.currentTime; segWall = Date.now(); segOffset = offset;
+    src.start(0, offset);
+  }
+  function restartAt(offset) {
+    var wasPlaying = state === 'PLAYING';
+    if (wasPlaying) { loopBase = getLoops(); closeSegment(); }
+    startSource(offset);
+    if (!wasPlaying) { /* 呼び出し側で状態を設定 */ }
+  }
+
+  function play() {
+    if (state === 'NO_FILE') { msg('まず ⏏ でファイルを選んでください'); return; }
+    msg('');
+    var offset = state === 'PAUSED' ? pausedPos : start;
+    if (offset < start || offset >= end) offset = start;
+    keepStart();
+    var go = function () { startSource(offset); setState('PLAYING'); };
+    if (ctx.state !== 'running') { ctx.resume().then(go, function (e) { msg('再生できませんでした。もう一度再生ボタンを押してください'); log('resume失敗 ' + e); }); }
+    else { go(); }
+  }
+  function pause() {
+    if (state !== 'PLAYING') return;
+    pausedPos = getPos(); loopBase = getLoops(); closeSegment(); destroySource(); keepStop(); setState('PAUSED');
+  }
+  function stop() {
+    if (state === 'NO_FILE') return;
+    if (state === 'PLAYING') { loopBase = getLoops(); closeSegment(); }
+    destroySource(); keepStop(); pausedPos = start; setState('STOPPED');
+  }
+  function next() {
+    if (state === 'NO_FILE') return;
+    var ns = start + interval;
+    if (ns >= duration) { msg('ファイルの終わりに達しました'); return; }
+    start = ns; recalcEnd(); msg('');
+    if (state === 'PLAYING') { restartAt(start); setState('PLAYING'); } else { pausedPos = start; state = 'STOPPED'; play(); }
+  }
+
+  function loadFile(f) {
+    stop(); msg('ファイルを読み込み中…'); var t0 = Date.now();
+    if (!AC) { msg('このブラウザはWeb Audioに対応していません'); return; }
+    if (!ctx) {
+      ctx = new AC();
+      ctx.onstatechange = function () { log('AudioContext状態 → ' + ctx.state); };
+      log('AudioContext 作成 サンプルレート' + ctx.sampleRate + 'Hz');
+    }
+    f.arrayBuffer().then(function (ab) {
+      var readMs = Date.now() - t0;
+      return new Promise(function (res, rej) {
+        var p = ctx.decodeAudioData(ab, res, rej); if (p && p.then) p.then(res, rej);
+      }).then(function (b) { return { b: b, readMs: readMs }; });
+    }).then(function (r) {
+      buf = r.b; fileName = f.name; duration = buf.duration; start = 0; loopBase = 0; wallSum = 0; ctxSum = 0; pausedPos = 0;
+      recalcEnd(); state = 'STOPPED'; setControls(true); msg('');
+      var mb = buf.length * buf.numberOfChannels * 4 / 1e6;
+      $('txt-decode').textContent = '展開後のサイズ：約' + Math.round(mb) + 'MB（' + buf.numberOfChannels + 'ch・' + buf.sampleRate + 'Hz）／読込・展開 ' + ((Date.now() - t0) / 1000).toFixed(1) + '秒';
+      log('読込完了 ' + f.name + ' 全長' + fmt1(duration) + ' 展開後約' + Math.round(mb) + 'MB 所要' + (Date.now() - t0) + 'ms（ファイル読込' + r.readMs + 'ms）');
+      render(); setupMediaSession();
+    }).catch(function (e) {
+      msg('読み込めませんでした。mp3・m4a形式か確認してください'); log('読込失敗 ' + (e && e.message ? e.message : e));
+    });
+  }
+
+  $('btn-eject').addEventListener('click', function () { $('input-file').click(); });
+  $('input-file').addEventListener('change', function (ev) {
+    var f = ev.target.files && ev.target.files[0]; if (!f) return;
+    loadFile(f); ev.target.value = '';
+  });
+  $('btn-play').addEventListener('click', function () { if (state === 'PLAYING') pause(); else play(); });
+  $('btn-stop').addEventListener('click', stop);
+  $('btn-next').addEventListener('click', next);
+  $('input-interval').addEventListener('change', function () {
+    var n = Math.round(Number($('input-interval').value));
+    if (!isFinite(n) || $('input-interval').value === '') { msg('リピート間隔は1〜60の数字で入力してください'); render(); return; }
+    if (n < 1 || n > 60) { n = Math.min(60, Math.max(1, n)); msg('1〜60の範囲に直しました'); } else { msg(''); }
+    var pos = getPos(); interval = n; recalcEnd();
+    if (state === 'PLAYING') { restartAt(pos >= end ? start : pos); setState('PLAYING'); } else { render(); }
+  });
+  $('input-start').addEventListener('change', function () {
+    var s = parseTime($('input-start').value);
+    if (s === null) { msg('開始地点は「分:秒」（例 01:30）で入力してください'); render(); return; }
+    if (s >= duration) { msg('開始地点がファイルの長さを超えています'); render(); return; }
+    msg(''); start = s; recalcEnd();
+    if (state === 'PLAYING') { restartAt(start); setState('PLAYING'); } else { pausedPos = start; if (state !== 'NO_FILE') state = 'STOPPED'; render(); }
+  });
+  $('btn-copy').addEventListener('click', function () {
+    var text = logLines.join('\n') + '\n' + $('txt-stats').textContent + '\n' + $('txt-verdict').textContent + '\n' + $('txt-decode').textContent;
+    try { navigator.clipboard.writeText(text).then(function () { msg('ログをコピーしました'); }, function () { msg('コピーできません。ログを長押しして選択してください'); }); }
+    catch (e) { msg('コピーできません。ログを長押しして選択してください'); }
+  });
+
+  function verdictNow(label) {
+    if (state === 'NO_FILE') return;
+    var text;
+    if (state !== 'PLAYING') { text = '再生中ではありません（状態 ' + state + '）'; }
+    else {
+      var g = gapSec();
+      var running = ctx && ctx.state === 'running';
+      if (g > 1.5 || !running) text = '止まっていた（不合格の疑い）止まっていた時間 約' + Math.max(0, g).toFixed(1) + '秒／AudioContext ' + (ctx ? ctx.state : '-');
+      else text = '止まっていない（合格の見込み）差 ' + Math.max(0, g).toFixed(1) + '秒／AudioContext ' + ctx.state;
+    }
+    $('txt-verdict').textContent = '判定（' + label + '）：' + text;
+    log(label + ' ' + text);
+  }
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { hiddenAt = Date.now(); log('画面が隠れた（ロック／切替）'); }
+    else { verdictNow('復帰 ' + Math.round((Date.now() - hiddenAt) / 1000) + '秒後'); render(); }
+  });
+
+  function setupMediaSession() {
+    if (!('mediaSession' in navigator)) { log('Media Session 非対応'); return; }
+    try { navigator.mediaSession.metadata = new MediaMetadata({ title: fileName, artist: 'KEecoloop 検証B' }); } catch (e) {}
+    var h = { play: play, pause: pause, stop: stop, nexttrack: next };
+    Object.keys(h).forEach(function (k) { try { navigator.mediaSession.setActionHandler(k, h[k]); } catch (e) { log('未対応の操作: ' + k); } });
+  }
+  function updateMediaSession() {
+    if ('mediaSession' in navigator) { try { navigator.mediaSession.playbackState = state === 'PLAYING' ? 'playing' : (state === 'NO_FILE' ? 'none' : 'paused'); } catch (e) {} }
+  }
+
+  try { if (navigator.audioSession) { navigator.audioSession.type = 'playback'; log('audioSession.type = playback を設定'); } else { log('audioSession API なし'); } } catch (e) { log('audioSession設定失敗'); }
+  setInterval(function () {
+    if (document.hidden || state === 'NO_FILE') return;
+    $('txt-position').textContent = '位置 ' + fmt1(getPos()); updateStats();
+  }, UI_MS);
+  render();
+  log('検証B 起動 ' + (window.navigator.standalone ? '(ホーム画面から起動)' : '(Safariで表示)'));
+})();
+</script>
+</body>
+</html>
