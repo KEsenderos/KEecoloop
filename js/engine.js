@@ -16,6 +16,10 @@
   var segCtx = 0;      // 再生開始時の ctx.currentTime
   var segOffset = 0;   // 再生開始位置（秒）
   var rate = 1;        // 倍速（State.rate と同じ値。Main が setRate で知らせる）
+  var srcRate = 1;     // 現在の再生元を作ったときの倍速（位置の換算に使う）
+  var stretched = null;     // 伸び縮み後の音声（rate≠1 のときだけ）
+  var stretchedKey = '';    // stretched を作ったときの (startSec|endSec|rate)
+  var segOffsetS = 0;       // stretched 上の再生開始位置（秒）
   var pausedPos = 0;   // 一時停止・停止中の位置（秒）
 
   function notify_() { callbacks.onStateChange(state); }
@@ -71,20 +75,46 @@
     source = null;
   }
 
+  /** rate≠1 のとき、区間を伸び縮みさせた音声を用意する（同じ条件なら作り直さない）。rate==1 なら破棄 */
+  function prepareStretched_() {
+    if (rate === 1) { stretched = null; stretchedKey = ''; return; }
+    var key = secStart + '|' + secEnd + '|' + rate;
+    if (stretched && key === stretchedKey) return;
+    try {
+      stretched = RE.Stretch.render(ctx, buffer, secStart, secEnd, rate);
+      stretchedKey = key;
+    } catch (e) {
+      stretched = null; stretchedKey = '';   // 作れなかった場合は、元の速度で再生を続ける
+    }
+  }
+
   function createSource_(offset) {
     destroySource_();
+    prepareStretched_();
     var src = ctx.createBufferSource();
     source = src;
-    src.buffer = buffer;
-    src.playbackRate.value = rate;   // 倍速（声の高さも変わる）
-    // ループ範囲を先に決めてから loop を有効にする（Safari対策）
-    applyLoop_(src);
-    src.connect(ctx.destination);
     segCtx = ctx.currentTime;
     segOffset = offset;
-    src.start(0, offset);
-    // 開始後にもう一度ループ範囲を確定させる（Safariが開始時の設定を無視する場合の対策）
-    applyLoop_(src);
+    if (stretched) {
+      // 倍速: 伸び縮み後の音声を丸ごとループする（声の高さは変わらない）
+      srcRate = rate;
+      src.buffer = stretched;
+      src.loopStart = 0;
+      src.loopEnd = stretched.duration;
+      src.loop = true;
+      src.connect(ctx.destination);
+      segOffsetS = Math.min(Math.max(0, (offset - secStart) / rate), Math.max(0, stretched.duration - 0.001));
+      src.start(0, segOffsetS);
+    } else {
+      srcRate = 1;
+      src.buffer = buffer;
+      // ループ範囲を先に決めてから loop を有効にする（Safari対策）
+      applyLoop_(src);
+      src.connect(ctx.destination);
+      src.start(0, offset);
+      // 開始後にもう一度ループ範囲を確定させる（Safariが開始時の設定を無視する場合の対策）
+      applyLoop_(src);
+    }
     // 万一ループが効かずバッファの終わりまで再生された場合は、区間の頭から再生し直す
     src.onended = function () {
       if (source === src && state === S.PLAYING) createSource_(secStart);
@@ -103,6 +133,10 @@
   function inSection_(pos) { return pos >= secStart && pos < secEnd; }
 
   function getPositionSec() {
+    if (state === S.PLAYING && ctx && srcRate !== 1 && stretched) {
+      var runS = segOffsetS + (ctx.currentTime - segCtx);
+      return secStart + (runS % stretched.duration) * srcRate;
+    }
     if (state === S.PLAYING && ctx) {
       var len = secEnd - secStart;
       if (len <= 0) return secStart;
@@ -125,6 +159,8 @@
     destroySource_();
     keepStop_();
     buffer = null;
+    stretched = null;
+    stretchedKey = '';
     if (state !== S.NO_FILE) { state = S.NO_FILE; notify_(); }
     if (!ensureContext_()) return Promise.reject(new Error('NO_WEB_AUDIO'));
     return file.arrayBuffer().then(function (ab) {
@@ -135,6 +171,9 @@
     }).then(function (decoded) {
       buffer = decoded;
       rate = C.RATE_DEFAULT;
+      srcRate = 1;
+      stretched = null;
+      stretchedKey = '';
       secStart = 0;
       secEnd = Math.min(C.END_DEFAULT_SEC, decoded.duration);
       pausedPos = 0;
@@ -222,17 +261,10 @@
     setState_(S.STOPPED);
   }
 
-  /** 倍速を設定する。再生中は、位置が飛ばないよう基準を取り直してから反映する。 */
+  /** 倍速を設定する。再生中は現在位置を保存しておく（実際の切り替えは、続く playFromStart で行う） */
   function setRate(r) {
-    if (state === S.PLAYING && ctx && source) {
-      var pos = getPositionSec();
-      segCtx = ctx.currentTime;
-      segOffset = pos;
-      rate = r;
-      try { source.playbackRate.value = r; } catch (e) { /* 無視 */ }
-    } else {
-      rate = r;
-    }
+    if (state === S.PLAYING && ctx && source) pausedPos = getPositionSec();
+    rate = r;
   }
 
   function getState() { return state; }

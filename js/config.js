@@ -1,11 +1,11 @@
-/* js/config.js / 定数（RE.Config） / 仕様書 v1.1 7章 / 版 1.5.0 */
+/* js/config.js / 定数（RE.Config） / 仕様書 v1.1 7章 / 版 1.6.0 */
 (function () {
   'use strict';
   window.RE = window.RE || {};
 
   RE.Config = Object.freeze({
     APP_NAME: 'KEecoloop',
-    APP_VERSION: '1.5.0',
+    APP_VERSION: '1.6.0',
     ENGINE_TYPE: 'WEB_AUDIO',
     MOVE_SEC_MIN: 1,
     MOVE_SEC_MAX: 60,
@@ -18,6 +18,10 @@
     PRESS_MIN_MS: 150,
     RATE_OPTIONS: Object.freeze([1.2, 1.1, 1.0, 0.9, 0.8]),
     RATE_DEFAULT: 1.0,
+    STRETCH_FRAME_MS: 40,
+    STRETCH_SEARCH_MS: 15,
+    STRETCH_DECIMATE: 4,
+    STRETCH_MAX_SECTION_SEC: 180,
     UI_REFRESH_MS: 250,
     MINUTES_MAX_DIGITS: 2,
     BAR_MARKER_MIN_PX: 8,
@@ -33,7 +37,9 @@
       MOVE_SEC_CLAMPED: '1〜60の範囲に直しました',
       REACHED_END: 'ファイルの終わりに達しました',
       PLAY_BLOCKED: '再生できませんでした。もう一度再生ボタンを押してください',
-      INTERRUPTED: '再生が中断されました。再生ボタンで再開できます'
+      INTERRUPTED: '再生が中断されました。再生ボタンで再開できます',
+      RATE_TOO_LONG: '区間が長すぎるため、この倍速は使えません（3分以内にしてください）',
+      RATE_RESET_LONG: '区間が長いため、倍速を1.0に戻しました'
     })
   });
 })();

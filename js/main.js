@@ -1,4 +1,4 @@
-/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v1.1 5.3・9.6章 / 版 1.5.0 */
+/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v1.1 5.3・9.6章 / 版 1.6.0 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -36,10 +36,23 @@
     RE.UI.render();   // 移動時間は区間・再生には影響しない（次の区間移動から反映）
   }
 
+  /** 倍速中に区間が長すぎる（STRETCH_MAX_SECTION_SEC超）なら、倍速を1.0に戻してメッセージを出す */
+  function enforceRateLimit_() {
+    var St = RE.State;
+    if (St.rate !== C.RATE_DEFAULT && St.endSec - St.startSec > C.STRETCH_MAX_SECTION_SEC) {
+      St.rate = C.RATE_DEFAULT;
+      RE.Engine.setRate(C.RATE_DEFAULT);
+      RE.UI.showMessage(C.MSG.RATE_RESET_LONG);
+      return true;
+    }
+    return false;
+  }
+
   /** 開始地点を変える（終了地点は変えない） */
   function applyStart_(sec) {
     var St = RE.State;
     St.startSec = sec;
+    enforceRateLimit_();
     RE.Engine.setSection(St.startSec, St.endSec);
     if (St.playerState === S.PLAYING) RE.Engine.playFromStart(); else RE.Engine.stop();
     RE.UI.render();
@@ -49,6 +62,7 @@
   function applyEnd_(sec) {
     var St = RE.State;
     St.endSec = sec;
+    enforceRateLimit_();
     RE.Engine.setSection(St.startSec, St.endSec);
     RE.UI.render();
   }
@@ -148,6 +162,7 @@
     onRateSelect: function (rate) {
       var St = RE.State;
       if (St.playerState === S.NO_FILE) { RE.UI.showMessage(C.MSG.NO_FILE_SELECTED); return; }
+      if (rate !== C.RATE_DEFAULT && St.endSec - St.startSec > C.STRETCH_MAX_SECTION_SEC) { RE.UI.showMessage(C.MSG.RATE_TOO_LONG); return; }
       St.rate = rate;
       RE.Engine.setRate(rate);
       RE.UI.clearMessage();
