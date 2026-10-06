@@ -2,7 +2,7 @@
  * CACHE_VERSION は js/config.js の APP_VERSION と同じ値にする。 */
 'use strict';
 
-var CACHE_VERSION = '1.4.1';
+var CACHE_VERSION = '1.5.0';
 var CACHE_NAME = 're-cache-' + CACHE_VERSION;
 var APP_SHELL_FILES = [
   './',

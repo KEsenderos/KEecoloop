@@ -1,4 +1,4 @@
-/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v1.1 5.3・9.6章 / 版 1.4.1 */
+/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v1.1 5.3・9.6章 / 版 1.5.0 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -80,6 +80,7 @@
       RE.Engine.loadFile(file).then(function (r) {
         if (token !== loadToken) return;
         RE.State.setFile(file.name, r.durationSec);
+        RE.Engine.setRate(RE.State.rate);
         RE.Engine.setSection(RE.State.startSec, RE.State.endSec);
         RE.State.playerState = S.STOPPED;
         RE.UI.clearMessage();
@@ -141,6 +142,17 @@
       if (n === St.endSec) return;
       RE.UI.clearMessage();
       applyEnd_(n);
+    },
+
+    /** 倍速ボタン: その倍速で、開始地点から区間ループ再生を始める（再生ボタン不要） */
+    onRateSelect: function (rate) {
+      var St = RE.State;
+      if (St.playerState === S.NO_FILE) { RE.UI.showMessage(C.MSG.NO_FILE_SELECTED); return; }
+      St.rate = rate;
+      RE.Engine.setRate(rate);
+      RE.UI.clearMessage();
+      RE.UI.render();
+      RE.Engine.playFromStart();
     },
 
     onMoveCommitted: function (text) {

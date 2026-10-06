@@ -99,6 +99,16 @@ button:disabled { cursor: default; }
 .colon { width: 12px; text-align: center; font-family: var(--num-font); font-weight: 700; font-size: 26px; color: var(--muted); padding-bottom: 2px; }
 .time-sep { height: 1px; background: var(--line-soft); }
 .card-move { padding: 12px 16px; gap: 8px; }
+.card-rate { padding: 12px 16px; }
+.rate-row { display: flex; gap: 8px; }
+.rate-btn {
+  flex: 1; height: 48px; padding: 0; border-radius: 10px; border: 1px solid var(--line); background: var(--surface-2);
+  color: var(--text); font-family: var(--num-font); font-weight: 700; font-size: 17px; font-variant-numeric: tabular-nums;
+  cursor: pointer; transition: background-color .18s, color .18s, border-color .18s;
+}
+.rate-btn.active { border-color: var(--accent); color: var(--accent); }
+.rate-btn.pressed, .rate-btn:active { background: var(--accent); color: var(--accent-ink); border-color: transparent; transition: none; }
+.rate-btn:disabled { opacity: 0.4; }
 .move-note { font-size: 12px; line-height: 1.5; color: var(--muted); }
 .interval-label .sub { display: block; font-size: 12px; color: var(--muted-2); font-weight: 400; margin-top: 2px; }
 .interval-row { display: flex; align-items: center; justify-content: space-between; }
@@ -147,5 +157,6 @@ button:disabled { cursor: default; }
   .round-btn-main { width: 84px; height: 84px; }
   .round-btn-sub { width: 64px; height: 64px; }
   .digit-btn { height: 44px; }
+  .rate-btn { height: 44px; }
   .digit-num { height: 32px; font-size: 26px; }
 }

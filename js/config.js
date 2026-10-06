@@ -1,11 +1,11 @@
-/* js/config.js / 定数（RE.Config） / 仕様書 v1.1 7章 / 版 1.4.1 */
+/* js/config.js / 定数（RE.Config） / 仕様書 v1.1 7章 / 版 1.5.0 */
 (function () {
   'use strict';
   window.RE = window.RE || {};
 
   RE.Config = Object.freeze({
     APP_NAME: 'KEecoloop',
-    APP_VERSION: '1.4.1',
+    APP_VERSION: '1.5.0',
     ENGINE_TYPE: 'WEB_AUDIO',
     MOVE_SEC_MIN: 1,
     MOVE_SEC_MAX: 60,
@@ -16,6 +16,8 @@
     OVERLAP_SEC: 1,
     REMOTE_DEBOUNCE_MS: 300,
     PRESS_MIN_MS: 150,
+    RATE_OPTIONS: Object.freeze([1.2, 1.1, 1.0, 0.9, 0.8]),
+    RATE_DEFAULT: 1.0,
     UI_REFRESH_MS: 250,
     MINUTES_MAX_DIGITS: 2,
     BAR_MARKER_MIN_PX: 8,

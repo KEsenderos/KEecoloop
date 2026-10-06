@@ -15,6 +15,7 @@
   var secEnd = 0;
   var segCtx = 0;      // 再生開始時の ctx.currentTime
   var segOffset = 0;   // 再生開始位置（秒）
+  var rate = 1;        // 倍速（State.rate と同じ値。Main が setRate で知らせる）
   var pausedPos = 0;   // 一時停止・停止中の位置（秒）
 
   function notify_() { callbacks.onStateChange(state); }
@@ -75,6 +76,7 @@
     var src = ctx.createBufferSource();
     source = src;
     src.buffer = buffer;
+    src.playbackRate.value = rate;   // 倍速（声の高さも変わる）
     // ループ範囲を先に決めてから loop を有効にする（Safari対策）
     applyLoop_(src);
     src.connect(ctx.destination);
@@ -104,7 +106,7 @@
     if (state === S.PLAYING && ctx) {
       var len = secEnd - secStart;
       if (len <= 0) return secStart;
-      var run = (segOffset - secStart) + (ctx.currentTime - segCtx);
+      var run = (segOffset - secStart) + (ctx.currentTime - segCtx) * rate;
       return secStart + (run % len);
     }
     return state === S.PAUSED ? pausedPos : secStart;
@@ -132,6 +134,7 @@
       });
     }).then(function (decoded) {
       buffer = decoded;
+      rate = C.RATE_DEFAULT;
       secStart = 0;
       secEnd = Math.min(C.END_DEFAULT_SEC, decoded.duration);
       pausedPos = 0;
@@ -219,6 +222,19 @@
     setState_(S.STOPPED);
   }
 
+  /** 倍速を設定する。再生中は、位置が飛ばないよう基準を取り直してから反映する。 */
+  function setRate(r) {
+    if (state === S.PLAYING && ctx && source) {
+      var pos = getPositionSec();
+      segCtx = ctx.currentTime;
+      segOffset = pos;
+      rate = r;
+      try { source.playbackRate.value = r; } catch (e) { /* 無視 */ }
+    } else {
+      rate = r;
+    }
+  }
+
   function getState() { return state; }
 
   RE.Engine = {
@@ -227,6 +243,7 @@
     setSection: setSection,
     play: play,
     playFromStart: playFromStart,
+    setRate: setRate,
     pause: pause,
     stop: stop,
     getPositionSec: getPositionSec,

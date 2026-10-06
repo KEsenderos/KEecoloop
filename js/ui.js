@@ -1,4 +1,4 @@
-/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v1.1 4章・9.5章 / 版 1.4.1 */
+/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v1.1 4章・9.5章 / 版 1.5.0 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -41,7 +41,7 @@
     el['btn-next'].addEventListener('click', function () { commitInput_(); h.onNext(); });
     // タップした瞬間にボタンの色を変え、指を離すと戻す（iPhoneは :active だけでは確実に変わらないため）。
     // 一瞬のタップでも色の変化が見えるよう、最低 PRESS_MIN_MS は色を保つ。
-    Array.prototype.forEach.call(document.querySelectorAll('.digit-btn'), function (btn) {
+    Array.prototype.forEach.call(document.querySelectorAll('.digit-btn, .rate-btn'), function (btn) {
       var downAt = 0, timer = null;
       function release() {
         if (!downAt) return;
@@ -64,16 +64,28 @@
         if (btn.getAttribute('data-target') === 'start') h.onStartStep(delta); else h.onEndStep(delta);
       });
     });
+    // 倍速ボタン（data-rate）
+    Array.prototype.forEach.call(document.querySelectorAll('.rate-btn'), function (btn) {
+      btn.addEventListener('click', function () { commitInput_(); h.onRateSelect(Number(btn.getAttribute('data-rate'))); });
+    });
     el['input-move'].addEventListener('change', function () { h.onMoveCommitted(el['input-move'].value); });
     el['btn-move-minus'].addEventListener('click', function () { h.onMoveStep(-1); });
     el['btn-move-plus'].addEventListener('click', function () { h.onMoveStep(1); });
   }
 
   function setControlsEnabled_(enabled) {
-    Array.prototype.forEach.call(document.querySelectorAll('.digit-btn'), function (b) { b.disabled = !enabled; });
+    Array.prototype.forEach.call(document.querySelectorAll('.digit-btn, .rate-btn'), function (b) { b.disabled = !enabled; });
     ['btn-move-minus', 'input-move', 'btn-move-plus', 'btn-stop', 'btn-play', 'btn-next']
       .forEach(function (id) { el[id].disabled = !enabled; });
     el.card.classList.toggle('disabled', !enabled);
+  }
+
+  function renderRate_() {
+    Array.prototype.forEach.call(document.querySelectorAll('.rate-btn'), function (b) {
+      var on = Number(b.getAttribute('data-rate')) === RE.State.rate;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
   }
 
   function setPlayButtonLook_(isPlaying) {
@@ -149,6 +161,7 @@
     el['txt-move-note'].textContent = St.moveSec <= C.OVERLAP_SEC
       ? '区間移動: 開始・終了をそのまま1秒進めます（移動時間が1秒のときだけの決まり）'
       : '区間移動: 開始・終了を1秒戻してから、' + St.moveSec + '秒進めます（実質＋' + stepNow + '秒）';
+    renderRate_();
     setControlsEnabled_(!noFile);
     setPlayButtonLook_(St.playerState === S.PLAYING);
     renderBar_();
