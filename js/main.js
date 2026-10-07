@@ -1,4 +1,4 @@
-/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v1.1 5.3・9.6章 / 版 1.6.0 */
+/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v1.1 5.3・9.6章 / 版 1.7.0 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -20,9 +20,25 @@
     else if (errCode === C.ERR.INTERRUPTED) RE.UI.showMessage(C.MSG.INTERRUPTED);
   }
 
+  var swReg = null;
+  var lastUpdateCheck = Date.now();
+
   function registerServiceWorker_() {
     if (!('serviceWorker' in navigator)) return;
-    navigator.serviceWorker.register('./sw.js').catch(function () { /* 登録できなくても動作は続ける */ });
+    // 起動時にすでにサービスワーカーが働いていた場合だけ、「新しい版に切り替わった」を知らせる（初回は出さない）
+    var hadController = !!navigator.serviceWorker.controller;
+    navigator.serviceWorker.addEventListener('controllerchange', function () {
+      if (hadController) RE.UI.showUpdateBanner();
+    });
+    navigator.serviceWorker.register('./sw.js').then(function (reg) { swReg = reg; })
+      .catch(function () { /* 登録できなくても動作は続ける */ });
+  }
+
+  /** 前面に戻ったとき、前回から UPDATE_CHECK_MIN_MS 以上たっていれば、新しい版がないか確認する */
+  function checkUpdate_() {
+    if (!swReg || Date.now() - lastUpdateCheck < C.UPDATE_CHECK_MIN_MS) return;
+    lastUpdateCheck = Date.now();
+    try { swReg.update().catch(function () { /* 無視 */ }); } catch (e) { /* 無視 */ }
   }
 
   function refreshPosition_() {
@@ -85,6 +101,9 @@
 
   var handlers = {
     onEject: function () { RE.UI.openFilePicker(); },
+
+    /** 更新のお知らせ帯のタップ: 再読み込みして新しい版にする */
+    onUpdateTap: function () { location.reload(); },
 
     onFileSelected: function (file) {
       var token = ++loadToken;
@@ -214,7 +233,7 @@
     registerServiceWorker_();
     setInterval(refreshPosition_, C.UI_REFRESH_MS);
     document.addEventListener('visibilitychange', function () {
-      if (!document.hidden) { refreshPosition_(); RE.UI.render(); }
+      if (!document.hidden) { refreshPosition_(); RE.UI.render(); checkUpdate_(); }
     });
   }
 

@@ -1,4 +1,4 @@
-/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v1.1 4章・9.5章 / 版 1.6.0 */
+/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v1.1 4章・9.5章 / 版 1.7.0 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -12,7 +12,8 @@
     ['btn-eject', 'input-file', 'txt-file-label', 'txt-filename', 'txt-file-hint', 'txt-position', 'txt-duration',
       'bar-track', 'bar-played', 'bar-marker', 'txt-bar-start', 'txt-bar-end', 
       'btn-move-minus', 'input-move', 'btn-move-plus', 'txt-move-note', 'txt-message', 'btn-stop', 'btn-play',
-      'icon-play', 'icon-pause', 'btn-next', 'txt-next-hint', 'txt-version'
+      'icon-play', 'icon-pause', 'btn-next', 'txt-next-hint', 'txt-version',
+      'banner-update', 'txt-update-main', 'txt-update-note'
     ].forEach(function (id) { el[id] = $(id); });
     el.card = document.querySelector('.card');
   }
@@ -25,6 +26,7 @@
   }
 
   function bindEvents_(h) {
+    el['banner-update'].addEventListener('click', function () { h.onUpdateTap(); });
     el['btn-eject'].addEventListener('click', function () { h.onEject(); });
     el['input-file'].addEventListener('change', function (ev) {
       var f = ev.target.files && ev.target.files[0];
@@ -181,8 +183,16 @@
     el['txt-position'].textContent = U.formatTime(sec);
   }
 
+  /** 更新のお知らせ帯を表示する（一度出したら消さない） */
+  function showUpdateBanner() {
+    el['txt-update-main'].textContent = C.MSG.UPDATE_AVAILABLE;
+    el['txt-update-note'].textContent = C.MSG.UPDATE_NOTE;
+    el['banner-update'].hidden = false;
+  }
+
   RE.UI = {
     init: init,
+    showUpdateBanner: showUpdateBanner,
     render: render,
     openFilePicker: openFilePicker,
     showMessage: showMessage,
