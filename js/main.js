@@ -1,4 +1,4 @@
-/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v1.1 5.3・9.6章 / 版 1.8.0 */
+/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v1.1 5.3・9.6章 / 版 1.9.0 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -192,6 +192,20 @@
       if (RE.State.playerState === S.NO_FILE) return;
       RE.UI.clearMessage();
       RE.Engine.stop();
+    },
+
+    /** 全範囲選択: 読み込まれているスロット（ダブルモードならA・B）を 00:00〜ファイルの終わり にする */
+    onSelectAll: function () {
+      var St = RE.State;
+      if (St.playerState === S.NO_FILE) return;
+      var useA = !!St.fileName, useB = St.mode === C.MODE.DOUBLE && !!St.fileNameB;
+      if (useA) { St.startSec = 0; St.endSec = St.durationSec; }
+      if (useB) { St.startSecB = 0; St.endSecB = St.durationSecB; }
+      enforceRateLimit_();
+      if (useA) pushSection_('A');
+      if (useB) pushSection_('B');
+      RE.UI.render();
+      if (St.playerState === S.PLAYING) RE.Engine.playFromStart(); else RE.Engine.stop();
     },
 
     /** 区間移動: 開始・終了の両方を stepSec（移動時間−1秒）だけ進め、再生する。ダブルモードでは両方の区間を同時に進める */

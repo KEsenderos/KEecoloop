@@ -1,4 +1,4 @@
-/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v1.1 4章・9.5章 / 版 1.8.0 */
+/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v1.1 4章・9.5章 / 版 1.9.0 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -14,7 +14,7 @@
       'btn-move-minus', 'input-move', 'btn-move-plus', 'txt-move-note', 'txt-message', 'btn-stop', 'btn-play',
       'icon-play', 'icon-pause', 'btn-next', 'txt-next-hint', 'txt-version',
       'banner-update', 'txt-update-main', 'txt-update-note',
-      'btn-mode', 'input-file-b', 'slot-b', 'b-btn-eject', 'b-txt-file-label', 'b-txt-filename', 'b-txt-file-hint',
+      'btn-all', 'btn-mode', 'input-file-b', 'slot-b', 'b-btn-eject', 'b-txt-file-label', 'b-txt-filename', 'b-txt-file-hint',
       'b-txt-position', 'b-txt-duration', 'b-bar-track', 'b-bar-played', 'b-bar-marker', 'b-txt-bar-end'
     ].forEach(function (id) { el[id] = $(id); });
     el.card = document.querySelector('.card');
@@ -55,6 +55,7 @@
     el['btn-play'].addEventListener('click', function () { commitInput_(); h.onPlayPause(); });
     el['btn-stop'].addEventListener('click', function () { commitInput_(); h.onStop(); });
     el['btn-next'].addEventListener('click', function () { commitInput_(); h.onNext(); });
+    el['btn-all'].addEventListener('click', function () { commitInput_(); h.onSelectAll(); });
     // タップした瞬間にボタンの色を変え、指を離すと戻す（iPhoneは :active だけでは確実に変わらないため）。
     // 一瞬のタップでも色の変化が見えるよう、最低 PRESS_MIN_MS は色を保つ。
     Array.prototype.forEach.call(document.querySelectorAll('.digit-btn, .rate-btn, .mode-btn'), function (btn) {
@@ -101,7 +102,7 @@
       var t = b.getAttribute('data-target');
       b.disabled = (t === 'bstart' || t === 'bend') ? !loadedB : !loadedA;
     });
-    ['btn-move-minus', 'input-move', 'btn-move-plus', 'btn-stop', 'btn-play', 'btn-next']
+    ['btn-move-minus', 'input-move', 'btn-move-plus', 'btn-stop', 'btn-play', 'btn-all', 'btn-next']
       .forEach(function (id) { el[id].disabled = !enabled; });
     el.card.classList.toggle('disabled', !loadedA);
     el.cardB.classList.toggle('disabled', !loadedB);

@@ -1,4 +1,4 @@
-/* js/engine.js / 再生エンジン（RE.Engine）Web Audio方式 / 仕様書 v2.5 5.5・5.9・9.3章 / 版 1.8.0
+/* js/engine.js / 再生エンジン（RE.Engine）Web Audio方式 / 仕様書 v2.5 5.5・5.9・9.3章 / 版 1.9.0
  * 画面（DOM）にも RE.State にも触れない。状態の変化は callbacks.onStateChange で知らせるだけ。
  * スロット "A"（1つ目）と "B"（2つ目）の2つのファイルを持てる。ダブルモードでは両方の区間を交互に再生する。 */
 (function () {
