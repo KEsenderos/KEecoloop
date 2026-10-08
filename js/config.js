@@ -1,11 +1,11 @@
-/* js/config.js / 定数（RE.Config） / 仕様書 v1.1 7章 / 版 1.7.0 */
+/* js/config.js / 定数（RE.Config） / 仕様書 v1.1 7章 / 版 1.8.0 */
 (function () {
   'use strict';
   window.RE = window.RE || {};
 
   RE.Config = Object.freeze({
     APP_NAME: 'KEecoloop',
-    APP_VERSION: '1.7.0',
+    APP_VERSION: '1.8.0',
     ENGINE_TYPE: 'WEB_AUDIO',
     MOVE_SEC_MIN: 1,
     MOVE_SEC_MAX: 60,
@@ -23,13 +23,21 @@
     STRETCH_DECIMATE: 4,
     STRETCH_MAX_SECTION_SEC: 180,
     UPDATE_CHECK_MIN_MS: 600000,
+    MODE: Object.freeze({ SINGLE: 'SINGLE', DOUBLE: 'DOUBLE' }),
+    DOUBLE_MAX_SECTION_SEC: 2400,
+    // 読み込み時の軽量化。ステレオは維持し、24kHzで展開（話し声ではほぼ差が出ない）。0にすると端末標準（最高音質・メモリ大）
+    AUDIO_SAMPLE_RATE: 24000,
+    AUDIO_MONO: false,
+    // ファイル選択欄の accept 属性。音声だけに絞り、iPhoneで「写真ライブラリ」「写真またはビデオを撮る」を出さない。
+    // 空文字 '' にすると accept 属性を付けない（iPhoneで音声が灰色になって選べない場合の戻し先）。
+    ACCEPT_AUDIO: 'audio/*,.mp3,.m4a,.wav,.aac,.flac,.ogg',
     UI_REFRESH_MS: 250,
     MINUTES_MAX_DIGITS: 2,
     BAR_MARKER_MIN_PX: 8,
     KEEPALIVE_SILENT_AUDIO: true,
     STORAGE_KEY_MOVE: 're.moveSec',
     PLAYER_STATE: Object.freeze({ NO_FILE: 'NO_FILE', STOPPED: 'STOPPED', PLAYING: 'PLAYING', PAUSED: 'PAUSED' }),
-    ERR: Object.freeze({ DECODE: 'DECODE', PLAY_BLOCKED: 'PLAY_BLOCKED', INTERRUPTED: 'INTERRUPTED' }),
+    ERR: Object.freeze({ DECODE: 'DECODE', PLAY_BLOCKED: 'PLAY_BLOCKED', INTERRUPTED: 'INTERRUPTED', TOO_LONG: 'TOO_LONG' }),
     MSG: Object.freeze({
       FILE_LOADING: 'ファイルを読み込み中…',
       FILE_ERROR: '読み込めませんでした。mp3・m4a・wav形式か確認してください',
@@ -42,7 +50,9 @@
       RATE_TOO_LONG: '区間が長すぎるため、この倍速は使えません（3分以内にしてください）',
       RATE_RESET_LONG: '区間が長いため、倍速を1.0に戻しました',
       UPDATE_AVAILABLE: '新しい版があります。ここをタップして更新',
-      UPDATE_NOTE: '選んだファイルは選び直しになります'
+      UPDATE_NOTE: '選んだファイルは選び直しになります',
+      DOUBLE_TOO_LONG: '2つの区間の合計が長すぎます（40分以内にしてください）',
+      NO_B_FILE_SELECTED: '2つ目の音声を選ぶには、2つ目の ⏏ を押してください'
     })
   });
 })();

@@ -13,6 +13,9 @@
   --sub: #A9B4C3;
   --accent: #FFB020;
   --accent-ink: #1A1204;
+  --mode: #6AA9FF;
+  --mode-bg: #14233A;
+  --mode-ink: #0A1626;
   --num-font: ui-rounded, "SF Pro Rounded", -apple-system, "Helvetica Neue", system-ui, sans-serif;
   --ui-font: -apple-system, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans JP", system-ui, sans-serif;
 }
@@ -169,3 +172,17 @@ button:disabled { cursor: default; }
   .rate-btn { height: 44px; }
   .digit-num { height: 32px; font-size: 26px; }
 }
+
+.topbar-right { display: flex; align-items: center; gap: 10px; }
+.mode-btn {
+  height: 32px; padding: 0 12px; border-radius: 16px; border: 1px solid var(--mode);
+  background: var(--mode-bg); color: var(--mode); font-size: 12px; font-weight: 700; white-space: nowrap;
+}
+.mode-btn:active, .mode-btn.pressed { background: var(--mode); color: var(--mode-ink); }
+.slot-b { display: flex; flex-direction: column; gap: 14px; flex-shrink: 0; padding-top: 14px; border-top: 1px dashed var(--mode); }
+.slot-b[hidden] { display: none; }
+.slot-b .bar-marker, .slot-b .bar-played { }
+.slot-b .label-small { color: var(--mode); }
+.file-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.file-row .filename { flex: 1; }
+.file-row .icon-btn.attention { border-color: transparent; background: var(--mode); color: var(--mode-ink); }

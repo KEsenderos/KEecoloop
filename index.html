@@ -19,10 +19,14 @@
 
   <header class="topbar">
     <div class="brand"><span class="brand-ke">KE</span><span>ecoloop</span></div>
+    <div class="topbar-right">
+    <button id="btn-mode" class="mode-btn" type="button">ダブルモード</button>
     <button id="btn-eject" class="icon-btn" type="button" aria-label="ファイルを選ぶ">
       <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 5 4 15h16z" fill="currentColor"/><rect x="4" y="17.5" width="16" height="2.5" rx="1" fill="currentColor"/></svg>
     </button>
+    </div>
     <input id="input-file" type="file" hidden>
+    <input id="input-file-b" type="file" hidden>
   </header>
 
   <button id="banner-update" class="update-banner" type="button" hidden>
@@ -108,6 +112,88 @@
       </div>
     </div>
   </section>
+
+  <div id="slot-b" class="slot-b" hidden>
+  <section class="file">
+    <div id="b-txt-file-label" class="label-small">2つ目のファイル</div>
+    <div class="file-row"><div id="b-txt-filename" class="filename">ファイル未選択</div><button id="b-btn-eject" class="icon-btn" type="button" aria-label="2つ目のファイルを選ぶ"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 5 4 15h16z" fill="currentColor"/><rect x="4" y="17.5" width="16" height="2.5" rx="1" fill="currentColor"/></svg></button></div>
+    <div id="b-txt-file-hint" class="file-hint">右の ⏏ から、2つ目の音声を選びます</div>
+  </section>
+
+  <section class="position">
+    <div class="label-small">現在位置</div>
+    <div class="position-row">
+      <span id="b-txt-position" class="position-time empty">00:00</span>
+      <span id="b-txt-duration" class="position-total">全体 --:--</span>
+    </div>
+  </section>
+
+  <section class="bar" aria-hidden="true">
+    <div id="b-bar-track" class="bar-track">
+      <div class="bar-rail"></div>
+      <div id="b-bar-played" class="bar-played"></div>
+      <div id="b-bar-marker" class="bar-marker"></div>
+    </div>
+    <div class="bar-labels"><span id="b-txt-bar-start">00:00</span><span id="b-txt-bar-end">--:--</span></div>
+  </section>
+
+  <section class="card">
+    <div id="b-row-start" class="time-row">
+      <div class="time-label">開始</div>
+      <div class="digits">
+        <div class="digit">
+            <button id="b-btn-start-m10-up" class="digit-btn" type="button" data-target="bstart" data-unit="600" data-dir="1" aria-label="開始を10分増やす"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <span id="b-txt-start-m10" class="digit-num">0</span>
+            <button id="b-btn-start-m10-down" class="digit-btn" type="button" data-target="bstart" data-unit="600" data-dir="-1" aria-label="開始を10分減らす"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        <div class="digit">
+            <button id="b-btn-start-m1-up" class="digit-btn" type="button" data-target="bstart" data-unit="60" data-dir="1" aria-label="開始を1分増やす"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <span id="b-txt-start-m1" class="digit-num">0</span>
+            <button id="b-btn-start-m1-down" class="digit-btn" type="button" data-target="bstart" data-unit="60" data-dir="-1" aria-label="開始を1分減らす"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        <div class="colon" aria-hidden="true">:</div>
+        <div class="digit">
+            <button id="b-btn-start-s10-up" class="digit-btn" type="button" data-target="bstart" data-unit="10" data-dir="1" aria-label="開始を10秒増やす"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <span id="b-txt-start-s10" class="digit-num">0</span>
+            <button id="b-btn-start-s10-down" class="digit-btn" type="button" data-target="bstart" data-unit="10" data-dir="-1" aria-label="開始を10秒減らす"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        <div class="digit">
+            <button id="b-btn-start-s1-up" class="digit-btn" type="button" data-target="bstart" data-unit="1" data-dir="1" aria-label="開始を1秒増やす"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <span id="b-txt-start-s1" class="digit-num">0</span>
+            <button id="b-btn-start-s1-down" class="digit-btn" type="button" data-target="bstart" data-unit="1" data-dir="-1" aria-label="開始を1秒減らす"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+      </div>
+    </div>
+    <div class="time-sep"></div>
+    <div id="b-row-end" class="time-row">
+      <div class="time-label">終了</div>
+      <div class="digits">
+        <div class="digit">
+            <button id="b-btn-end-m10-up" class="digit-btn" type="button" data-target="bend" data-unit="600" data-dir="1" aria-label="終了を10分増やす"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <span id="b-txt-end-m10" class="digit-num">0</span>
+            <button id="b-btn-end-m10-down" class="digit-btn" type="button" data-target="bend" data-unit="600" data-dir="-1" aria-label="終了を10分減らす"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        <div class="digit">
+            <button id="b-btn-end-m1-up" class="digit-btn" type="button" data-target="bend" data-unit="60" data-dir="1" aria-label="終了を1分増やす"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <span id="b-txt-end-m1" class="digit-num">0</span>
+            <button id="b-btn-end-m1-down" class="digit-btn" type="button" data-target="bend" data-unit="60" data-dir="-1" aria-label="終了を1分減らす"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        <div class="colon" aria-hidden="true">:</div>
+        <div class="digit">
+            <button id="b-btn-end-s10-up" class="digit-btn" type="button" data-target="bend" data-unit="10" data-dir="1" aria-label="終了を10秒増やす"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <span id="b-txt-end-s10" class="digit-num">0</span>
+            <button id="b-btn-end-s10-down" class="digit-btn" type="button" data-target="bend" data-unit="10" data-dir="-1" aria-label="終了を10秒減らす"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+        <div class="digit">
+            <button id="b-btn-end-s1-up" class="digit-btn" type="button" data-target="bend" data-unit="1" data-dir="1" aria-label="終了を1秒増やす"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+            <span id="b-txt-end-s1" class="digit-num">0</span>
+            <button id="b-btn-end-s1-down" class="digit-btn" type="button" data-target="bend" data-unit="1" data-dir="-1" aria-label="終了を1秒減らす"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+          </div>
+      </div>
+    </div>
+  </section>
+
+  </div>
 
   <div id="txt-message" class="message" role="status" aria-live="polite"></div>
 

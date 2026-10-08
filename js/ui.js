@@ -1,4 +1,4 @@
-/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v1.1 4章・9.5章 / 版 1.7.0 */
+/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v1.1 4章・9.5章 / 版 1.8.0 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -13,9 +13,16 @@
       'bar-track', 'bar-played', 'bar-marker', 'txt-bar-start', 'txt-bar-end', 
       'btn-move-minus', 'input-move', 'btn-move-plus', 'txt-move-note', 'txt-message', 'btn-stop', 'btn-play',
       'icon-play', 'icon-pause', 'btn-next', 'txt-next-hint', 'txt-version',
-      'banner-update', 'txt-update-main', 'txt-update-note'
+      'banner-update', 'txt-update-main', 'txt-update-note',
+      'btn-mode', 'input-file-b', 'slot-b', 'b-btn-eject', 'b-txt-file-label', 'b-txt-filename', 'b-txt-file-hint',
+      'b-txt-position', 'b-txt-duration', 'b-bar-track', 'b-bar-played', 'b-bar-marker', 'b-txt-bar-end'
     ].forEach(function (id) { el[id] = $(id); });
     el.card = document.querySelector('.card');
+    el.cardB = document.querySelector('#slot-b .card');
+    var acc = C.ACCEPT_AUDIO;
+    ['input-file', 'input-file-b'].forEach(function (id) {
+      if (acc) el[id].setAttribute('accept', acc); else el[id].removeAttribute('accept');
+    });
   }
 
   /** handlers = RE.Main.handlers */
@@ -38,12 +45,19 @@
       var a = document.activeElement;
       if (a && a.tagName === 'INPUT' && a.blur) a.blur();
     }
+    el['btn-mode'].addEventListener('click', function () { commitInput_(); h.onModeToggle(); });
+    el['b-btn-eject'].addEventListener('click', function () { h.onEjectB(); });
+    el['input-file-b'].addEventListener('change', function (ev) {
+      var f = ev.target.files && ev.target.files[0];
+      ev.target.value = '';
+      if (f) h.onFileSelectedB(f);
+    });
     el['btn-play'].addEventListener('click', function () { commitInput_(); h.onPlayPause(); });
     el['btn-stop'].addEventListener('click', function () { commitInput_(); h.onStop(); });
     el['btn-next'].addEventListener('click', function () { commitInput_(); h.onNext(); });
     // タップした瞬間にボタンの色を変え、指を離すと戻す（iPhoneは :active だけでは確実に変わらないため）。
     // 一瞬のタップでも色の変化が見えるよう、最低 PRESS_MIN_MS は色を保つ。
-    Array.prototype.forEach.call(document.querySelectorAll('.digit-btn, .rate-btn'), function (btn) {
+    Array.prototype.forEach.call(document.querySelectorAll('.digit-btn, .rate-btn, .mode-btn'), function (btn) {
       var downAt = 0, timer = null;
       function release() {
         if (!downAt) return;
@@ -63,7 +77,11 @@
     Array.prototype.forEach.call(document.querySelectorAll('.digit-btn'), function (btn) {
       btn.addEventListener('click', function () {
         var delta = Number(btn.getAttribute('data-unit')) * Number(btn.getAttribute('data-dir'));
-        if (btn.getAttribute('data-target') === 'start') h.onStartStep(delta); else h.onEndStep(delta);
+        var t = btn.getAttribute('data-target');
+        if (t === 'start') h.onStartStep(delta);
+        else if (t === 'end') h.onEndStep(delta);
+        else if (t === 'bstart') h.onStartStepB(delta);
+        else h.onEndStepB(delta);
       });
     });
     // 倍速ボタン（data-rate）
@@ -76,10 +94,17 @@
   }
 
   function setControlsEnabled_(enabled) {
-    Array.prototype.forEach.call(document.querySelectorAll('.digit-btn, .rate-btn'), function (b) { b.disabled = !enabled; });
+    var St = RE.State;
+    var loadedA = !!St.fileName, loadedB = !!St.fileNameB;
+    Array.prototype.forEach.call(document.querySelectorAll('.rate-btn'), function (b) { b.disabled = !enabled; });
+    Array.prototype.forEach.call(document.querySelectorAll('.digit-btn'), function (b) {
+      var t = b.getAttribute('data-target');
+      b.disabled = (t === 'bstart' || t === 'bend') ? !loadedB : !loadedA;
+    });
     ['btn-move-minus', 'input-move', 'btn-move-plus', 'btn-stop', 'btn-play', 'btn-next']
       .forEach(function (id) { el[id].disabled = !enabled; });
-    el.card.classList.toggle('disabled', !enabled);
+    el.card.classList.toggle('disabled', !loadedA);
+    el.cardB.classList.toggle('disabled', !loadedB);
   }
 
   function renderRate_() {
@@ -99,36 +124,42 @@
 
   var DIGIT_KEYS = ['m10', 'm1', 's10', 's1'];
 
-  /** 開始・終了の8つの数字と、▲▼の有効/無効を更新 */
-  function renderDigits_(noFile) {
-    var St = RE.State;
-    var pairs = [['start', St.startSec], ['end', noFile ? C.END_DEFAULT_SEC : St.endSec]];
+  /** 開始・終了の8つの数字（スロットごと）を更新 */
+  function renderDigits_(slot) {
+    var St = RE.State, pf = slot === 'B' ? 'b-' : '';
+    var noFile = slot === 'B' ? !St.fileNameB : !St.fileName;
+    var st = slot === 'B' ? St.startSecB : St.startSec;
+    var en = slot === 'B' ? St.endSecB : St.endSec;
+    var pairs = [['start', st], ['end', noFile ? C.END_DEFAULT_SEC : en]];
     pairs.forEach(function (p) {
       var d = U.splitDigits(p[1]);
       DIGIT_KEYS.forEach(function (k) {
-        var node = $('txt-' + p[0] + '-' + k);
+        var node = $(pf + 'txt-' + p[0] + '-' + k);
         node.textContent = String(d[k]);
         node.classList.toggle('empty', noFile);
       });
     });
   }
 
-  function renderBar_() {
-    var St = RE.State;
-    var hasFile = St.durationSec > 0;
-    el['txt-bar-end'].textContent = hasFile ? U.formatTime(St.durationSec) : '--:--';
+  function renderBar_(slot) {
+    var St = RE.State, pf = slot === 'B' ? 'b-' : '';
+    var dur = slot === 'B' ? St.durationSecB : St.durationSec;
+    var start = slot === 'B' ? St.startSecB : St.startSec;
+    var endLabel = el[pf + 'txt-bar-end'], played = el[pf + 'bar-played'], marker = el[pf + 'bar-marker'], track = el[pf + 'bar-track'];
+    var hasFile = dur > 0;
+    endLabel.textContent = hasFile ? U.formatTime(dur) : '--:--';
     if (!hasFile) {
-      el['bar-marker'].style.display = 'none';
-      el['bar-played'].style.width = '0';
+      marker.style.display = 'none';
+      played.style.width = '0';
       return;
     }
-    var ratio = Math.min(1, St.startSec / St.durationSec);
-    var trackW = el['bar-track'].clientWidth || 300;
+    var ratio = Math.min(1, start / dur);
+    var trackW = track.clientWidth || 300;
     var maxLeft = Math.max(0, trackW - C.BAR_MARKER_MIN_PX);
     var left = Math.min(maxLeft, ratio * trackW);
-    el['bar-played'].style.width = left + 'px';
-    el['bar-marker'].style.left = left + 'px';
-    el['bar-marker'].style.display = 'block';
+    played.style.width = left + 'px';
+    marker.style.left = left + 'px';
+    marker.style.display = 'block';
   }
 
   function updateNextHint_() {
@@ -146,18 +177,29 @@
   /** RE.Stateを読み、全表示を更新する。入力中の欄を書き換えるため、一定時間ごとには呼ばない。 */
   function render() {
     var St = RE.State;
+    var dbl = St.mode === C.MODE.DOUBLE;
     var noFile = St.playerState === S.NO_FILE;
-    el['txt-filename'].textContent = noFile ? 'ファイル未選択' : St.fileName;
-    el['txt-filename'].classList.toggle('empty', noFile);
-    el['txt-file-label'].textContent = noFile ? 'ファイル' : '再生中のファイル';
-    el['txt-file-hint'].hidden = !noFile;
-    el['btn-eject'].classList.toggle('attention', noFile);
-    el['txt-duration'].textContent = '全体 ' + (noFile ? '--:--' : U.formatTime(St.durationSec));
-    if (noFile) {
-      el['txt-position'].textContent = '00:00';
-    }
-    el['txt-position'].classList.toggle('empty', noFile);
-    renderDigits_(noFile);
+    var noA = !St.fileName, noB = !St.fileNameB;
+    el['btn-mode'].textContent = dbl ? 'シングルモード' : 'ダブルモード';
+    el['slot-b'].hidden = !dbl;
+    el['txt-filename'].textContent = noA ? 'ファイル未選択' : St.fileName;
+    el['txt-filename'].classList.toggle('empty', noA);
+    el['txt-file-label'].textContent = noA ? 'ファイル' : '再生中のファイル';
+    el['txt-file-hint'].hidden = !noA;
+    el['btn-eject'].classList.toggle('attention', noA);
+    el['txt-duration'].textContent = '全体 ' + (noA ? '--:--' : U.formatTime(St.durationSec));
+    if (noA) el['txt-position'].textContent = '00:00';
+    el['txt-position'].classList.toggle('empty', noA);
+    el['b-txt-filename'].textContent = noB ? 'ファイル未選択' : St.fileNameB;
+    el['b-txt-filename'].classList.toggle('empty', noB);
+    el['b-txt-file-label'].textContent = noB ? '2つ目のファイル' : '2つ目の再生ファイル';
+    el['b-txt-file-hint'].hidden = !noB;
+    el['b-btn-eject'].classList.toggle('attention', noB);
+    el['b-txt-duration'].textContent = '全体 ' + (noB ? '--:--' : U.formatTime(St.durationSecB));
+    if (noB) el['b-txt-position'].textContent = '00:00';
+    el['b-txt-position'].classList.toggle('empty', noB);
+    renderDigits_('A');
+    renderDigits_('B');
     el['input-move'].value = St.moveSec;
     var stepNow = U.calcStepSec(St.moveSec);
     el['txt-move-note'].textContent = St.moveSec <= C.OVERLAP_SEC
@@ -166,11 +208,13 @@
     renderRate_();
     setControlsEnabled_(!noFile);
     setPlayButtonLook_(St.playerState === S.PLAYING);
-    renderBar_();
+    renderBar_('A');
+    renderBar_('B');
     updateNextHint_();
   }
 
   function openFilePicker() { el['input-file'].click(); }
+  function openFilePickerB() { el['input-file-b'].click(); }
 
   function showMessage(text) {
     el['txt-message'].textContent = text || '';
@@ -179,8 +223,8 @@
 
   function clearMessage() { showMessage(''); }
 
-  function updatePosition(sec) {
-    el['txt-position'].textContent = U.formatTime(sec);
+  function updatePosition(sec, slot) {
+    el[slot === 'B' ? 'b-txt-position' : 'txt-position'].textContent = U.formatTime(sec);
   }
 
   /** 更新のお知らせ帯を表示する（一度出したら消さない） */
@@ -195,6 +239,7 @@
     showUpdateBanner: showUpdateBanner,
     render: render,
     openFilePicker: openFilePicker,
+    openFilePickerB: openFilePickerB,
     showMessage: showMessage,
     clearMessage: clearMessage,
     updatePosition: updatePosition

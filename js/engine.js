@@ -1,5 +1,6 @@
-/* js/engine.js / 再生エンジン（RE.Engine）Web Audio方式 / 仕様書 v1.1 5.5・9.3章 / 版 1.0.0
- * 画面（DOM）にも RE.State にも触れない。状態の変化は callbacks.onStateChange で知らせるだけ。 */
+/* js/engine.js / 再生エンジン（RE.Engine）Web Audio方式 / 仕様書 v2.5 5.5・5.9・9.3章 / 版 1.8.0
+ * 画面（DOM）にも RE.State にも触れない。状態の変化は callbacks.onStateChange で知らせるだけ。
+ * スロット "A"（1つ目）と "B"（2つ目）の2つのファイルを持てる。ダブルモードでは両方の区間を交互に再生する。 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -7,24 +8,36 @@
 
   var callbacks = { onStateChange: function () {}, onError: function () {} };
   var ctx = null;
-  var buffer = null;
+  var buffers = { A: null, B: null };
+  var sec = { A: { s: 0, e: 0 }, B: { s: 0, e: 0 } };   // 各スロットの区間（秒）
+  var mode = C.MODE.SINGLE;
   var source = null;
   var keepAudio = null;
   var state = S.NO_FILE;
-  var secStart = 0;
-  var secEnd = 0;
-  var segCtx = 0;      // 再生開始時の ctx.currentTime
-  var segOffset = 0;   // 再生開始位置（秒）
-  var rate = 1;        // 倍速（State.rate と同じ値。Main が setRate で知らせる）
-  var srcRate = 1;     // 現在の再生元を作ったときの倍速（位置の換算に使う）
-  var stretched = null;     // 伸び縮み後の音声（rate≠1 のときだけ）
-  var stretchedKey = '';    // stretched を作ったときの (startSec|endSec|rate)
-  var segOffsetS = 0;       // stretched 上の再生開始位置（秒）
-  var pausedPos = 0;   // 一時停止・停止中の位置（秒）
+  var rate = 1;            // 倍速（State.rate と同じ値。Main が setRate で知らせる）
+  var srcRate = 1;         // 現在の再生元を作ったときの倍速（位置の換算に使う）
+  var curParts = [];       // 現在の再生元のパート [{slot, s, e, len}]（lenは「つなげる」方式のときだけ。秒）
+  var combined = null;     // 「つなげる」方式の音声
+  var combinedKey = '';    // combined を作ったときの条件
+  var combinedParts = [];  // combined のパート [{slot, s, e, len}]
+  var segCtx = 0;          // 再生開始時の ctx.currentTime
+  var segOffset = 0;       // 「元の音声そのまま」方式: 再生開始位置（そのファイル上の秒）
+  var segOffsetS = 0;      // 「つなげる」方式: combined 上の再生開始位置（秒）
+  var pausedSlot = 'A';    // 一時停止・停止中のスロット
+  var pausedPos = 0;       // 一時停止・停止中の位置（そのファイル上の秒）
 
   function notify_() { callbacks.onStateChange(state); }
-
   function setState_(s) { state = s; notify_(); }
+
+  /** 再生に使うスロットの並び（シングル: Aだけ。ダブル: 読み込まれているA・B） */
+  function parts_() {
+    var list = [];
+    if (buffers.A) list.push('A');
+    if (mode === C.MODE.DOUBLE && buffers.B) list.push('B');
+    return list;
+  }
+
+  function firstSlot_() { var p = parts_(); return p.length ? p[0] : 'A'; }
 
   function ensureContext_() {
     if (ctx) return true;
@@ -40,7 +53,9 @@
   }
 
   function interrupt_() {
-    pausedPos = getPositionSec();
+    var loc = locate_();
+    pausedSlot = loc.slot;
+    pausedPos = loc.pos;
     destroySource_();
     keepStop_();
     setState_(S.PAUSED);
@@ -75,76 +90,135 @@
     source = null;
   }
 
-  /** rate≠1 のとき、区間を伸び縮みさせた音声を用意する（同じ条件なら作り直さない）。rate==1 なら破棄 */
-  function prepareStretched_() {
-    if (rate === 1) { stretched = null; stretchedKey = ''; return; }
-    var key = secStart + '|' + secEnd + '|' + rate;
-    if (stretched && key === stretchedKey) return;
-    try {
-      stretched = RE.Stretch.render(ctx, buffer, secStart, secEnd, rate);
-      stretchedKey = key;
-    } catch (e) {
-      stretched = null; stretchedKey = '';   // 作れなかった場合は、元の速度で再生を続ける
+  function inSection_(slot, pos) { return pos >= sec[slot].s && pos < sec[slot].e; }
+
+  function tooLong_() { var e = new Error('TOO_LONG'); return e; }
+
+  /**
+   * 「つなげる」方式の音声（combined）を用意する。同じ条件なら作り直さない。
+   * 区間の音声: rate==1 → そのスロットのコピー、rate≠1 → RE.Stretch.render の結果。
+   */
+  function prepareCombined_(slots) {
+    var total = 0, i;
+    for (i = 0; i < slots.length; i++) total += Math.max(0, sec[slots[i]].e - sec[slots[i]].s);
+    if (slots.length > 1 && total > C.DOUBLE_MAX_SECTION_SEC) throw tooLong_();
+    var key = mode + '|' + rate + '|' + slots.map(function (sl) { return sl + ':' + sec[sl].s + ':' + sec[sl].e; }).join(',');
+    if (combined && key === combinedKey) return;
+    combined = null; combinedKey = ''; combinedParts = [];
+
+    var segs = [], sr = buffers[slots[0]].sampleRate, chans = 1, totalLen = 0;
+    for (i = 0; i < slots.length; i++) {
+      var sl = slots[i], b = buffers[sl], s = sec[sl].s, e = sec[sl].e, seg;
+      if (rate === 1) {
+        var i0 = Math.max(0, Math.floor(s * b.sampleRate));
+        var i1 = Math.min(b.length, Math.ceil(e * b.sampleRate));
+        seg = { buf: b, from: i0, len: Math.max(1, i1 - i0) };
+      } else {
+        var r = RE.Stretch.render(ctx, b, s, e, rate);
+        seg = { buf: r, from: 0, len: r.length };
+      }
+      seg.slot = sl; seg.s = s; seg.e = e;
+      segs.push(seg);
+      chans = Math.max(chans, seg.buf.numberOfChannels);
+      totalLen += seg.len;
     }
+    var out = ctx.createBuffer(chans, totalLen, sr);
+    var at = 0;
+    for (i = 0; i < segs.length; i++) {
+      var sg = segs[i];
+      for (var c = 0; c < chans; c++) {
+        var from = sg.buf.getChannelData(Math.min(c, sg.buf.numberOfChannels - 1));
+        var to = out.getChannelData(c);
+        to.set(from.subarray(sg.from, sg.from + sg.len), at);
+      }
+      combinedParts.push({ slot: sg.slot, s: sg.s, e: sg.e, len: sg.len / sr });
+      at += sg.len;
+    }
+    combined = out;
+    combinedKey = key;
   }
 
-  function createSource_(offset) {
+  /** 指定のスロット・位置（そのファイル上の秒）から再生元を作る。上限超えは例外 TOO_LONG */
+  function createSource_(slot, pos) {
     destroySource_();
-    prepareStretched_();
+    var slots = parts_();
+    if (!slots.length) return;
+    if (slots.indexOf(slot) < 0 || !inSection_(slot, pos)) { slot = slots[0]; pos = sec[slot].s; }
     var src = ctx.createBufferSource();
-    source = src;
     segCtx = ctx.currentTime;
-    segOffset = offset;
-    if (stretched) {
-      // 倍速: 伸び縮み後の音声を丸ごとループする（声の高さは変わらない）
+    if (slots.length === 1 && rate === 1) {
+      // 元の音声そのまま（従来どおり）
+      var b = buffers[slot];
+      source = src;
+      srcRate = 1;
+      curParts = [{ slot: slot, s: sec[slot].s, e: sec[slot].e }];
+      segOffset = pos;
+      src.buffer = b;
+      applyLoop_(src, slot);                 // ループ範囲を先に決めてから loop を有効にする（Safari対策）
+      src.connect(ctx.destination);
+      src.start(0, pos);
+      applyLoop_(src, slot);                 // 開始後にもう一度確定させる（Safari対策）
+    } else {
+      prepareCombined_(slots);
+      source = src;
       srcRate = rate;
-      src.buffer = stretched;
+      curParts = combinedParts.slice();
+      var before = 0;
+      for (var i = 0; i < combinedParts.length && combinedParts[i].slot !== slot; i++) before += combinedParts[i].len;
+      segOffsetS = Math.min(Math.max(0, before + (pos - sec[slot].s) / rate), Math.max(0, combined.duration - 0.001));
+      src.buffer = combined;
       src.loopStart = 0;
-      src.loopEnd = stretched.duration;
+      src.loopEnd = combined.duration;
       src.loop = true;
       src.connect(ctx.destination);
-      segOffsetS = Math.min(Math.max(0, (offset - secStart) / rate), Math.max(0, stretched.duration - 0.001));
       src.start(0, segOffsetS);
-    } else {
-      srcRate = 1;
-      src.buffer = buffer;
-      // ループ範囲を先に決めてから loop を有効にする（Safari対策）
-      applyLoop_(src);
-      src.connect(ctx.destination);
-      src.start(0, offset);
-      // 開始後にもう一度ループ範囲を確定させる（Safariが開始時の設定を無視する場合の対策）
-      applyLoop_(src);
     }
-    // 万一ループが効かずバッファの終わりまで再生された場合は、区間の頭から再生し直す
+    // 万一ループが効かずバッファの終わりまで再生された場合は、先頭から再生し直す
     src.onended = function () {
-      if (source === src && state === S.PLAYING) createSource_(secStart);
+      if (source === src && state === S.PLAYING) {
+        var f = firstSlot_();
+        try { createSource_(f, sec[f].s); } catch (e) { /* 無視 */ }
+      }
     };
   }
 
-  function applyLoop_(src) {
+  function applyLoop_(src, slot) {
     try {
-      var end = secEnd > secStart ? secEnd : Math.min(secStart + 1, buffer.duration);
-      src.loopStart = secStart;
+      var b = buffers[slot];
+      var end = sec[slot].e > sec[slot].s ? sec[slot].e : Math.min(sec[slot].s + 1, b.duration);
+      src.loopStart = sec[slot].s;
       src.loopEnd = end;
       src.loop = true;
     } catch (e) { /* 設定できない場合は無視 */ }
   }
 
-  function inSection_(pos) { return pos >= secStart && pos < secEnd; }
-
-  function getPositionSec() {
-    if (state === S.PLAYING && ctx && srcRate !== 1 && stretched) {
-      var runS = segOffsetS + (ctx.currentTime - segCtx);
-      return secStart + (runS % stretched.duration) * srcRate;
+  /** 再生中のスロットと位置（そのファイル上の秒）を返す */
+  function locate_() {
+    if (state === S.PLAYING && ctx && curParts.length) {
+      if (curParts.length === 1 && curParts[0].len === undefined) {
+        var p0 = curParts[0];
+        var len = p0.e - p0.s;
+        if (len <= 0) return { slot: p0.slot, pos: p0.s };
+        var run = (segOffset - p0.s) + (ctx.currentTime - segCtx);
+        return { slot: p0.slot, pos: p0.s + (run % len) };
+      }
+      var total = combined ? combined.duration : 0;
+      if (total <= 0) return { slot: curParts[0].slot, pos: curParts[0].s };
+      var u = (segOffsetS + (ctx.currentTime - segCtx)) % total;
+      for (var i = 0; i < curParts.length; i++) {
+        if (u < curParts[i].len || i === curParts.length - 1) {
+          return { slot: curParts[i].slot, pos: curParts[i].s + Math.min(u, curParts[i].len) * srcRate };
+        }
+        u -= curParts[i].len;
+      }
     }
-    if (state === S.PLAYING && ctx) {
-      var len = secEnd - secStart;
-      if (len <= 0) return secStart;
-      var run = (segOffset - secStart) + (ctx.currentTime - segCtx) * rate;
-      return secStart + (run % len);
-    }
-    return state === S.PAUSED ? pausedPos : secStart;
+    if (state === S.PAUSED) return { slot: pausedSlot, pos: pausedPos };
+    var f = firstSlot_();
+    return { slot: f, pos: sec[f].s };
   }
+
+  function getPositionSec() { return locate_().pos; }
+  function getActiveSlot() { return locate_().slot; }
 
   function init(cb) {
     callbacks = cb;
@@ -154,57 +228,129 @@
     });
   }
 
-  /** ファイルを読み込む。メモリ節約のため、先に前のファイルを破棄する。失敗時はNO_FILEに戻る。 */
-  function loadFile(file) {
+  function stopToStart_() {
+    var f = firstSlot_();
+    pausedSlot = f;
+    pausedPos = sec[f].s;
+  }
+
+  /** 読み込み用の変換器。AUDIO_SAMPLE_RATE が指定されていれば、その周波数で展開する（メモリ節約）。失敗したら通常の出口を使う */
+  function decodeContext_() {
+    var rate = C.AUDIO_SAMPLE_RATE;
+    if (rate > 0) {
+      try {
+        var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+        if (OAC) return new OAC(2, 1, rate);
+      } catch (e) { /* 通常の出口を使う */ }
+    }
+    return ctx;
+  }
+
+  /** AUDIO_MONO が true のときだけモノラルにする（標準は false=ステレオのまま） */
+  function lighten_(buf) {
+    if (!C.AUDIO_MONO || buf.numberOfChannels < 2) return buf;
+    var out = ctx.createBuffer(1, buf.length, buf.sampleRate);
+    var o = out.getChannelData(0), n = buf.numberOfChannels, c, i;
+    for (c = 0; c < n; c++) {
+      var d = buf.getChannelData(c);
+      for (i = 0; i < o.length; i++) o[i] += d[i] / n;
+    }
+    return out;
+  }
+
+  /** ファイルを読み込む（slot は "A" か "B"）。再生は止まる。メモリ節約のため、先に前のファイルを破棄する。失敗時はそのスロットが未選択に戻る。 */
+  function loadFile(file, slot) {
+    slot = slot === 'B' ? 'B' : 'A';
     destroySource_();
     keepStop_();
-    buffer = null;
-    stretched = null;
-    stretchedKey = '';
-    if (state !== S.NO_FILE) { state = S.NO_FILE; notify_(); }
+    buffers[slot] = null;
+    combined = null; combinedKey = ''; combinedParts = []; curParts = [];
+    var stateNow = parts_().length ? S.STOPPED : S.NO_FILE;
+    if (state !== stateNow) { state = stateNow; notify_(); }
     if (!ensureContext_()) return Promise.reject(new Error('NO_WEB_AUDIO'));
     return file.arrayBuffer().then(function (ab) {
       return new Promise(function (resolve, reject) {
-        var p = ctx.decodeAudioData(ab, resolve, reject);
+        var dctx = decodeContext_();
+        var p = dctx.decodeAudioData(ab, resolve, reject);
         if (p && p.then) p.then(resolve, reject);
       });
     }).then(function (decoded) {
-      buffer = decoded;
-      rate = C.RATE_DEFAULT;
-      srcRate = 1;
-      stretched = null;
-      stretchedKey = '';
-      secStart = 0;
-      secEnd = Math.min(C.END_DEFAULT_SEC, decoded.duration);
-      pausedPos = 0;
+      return lighten_(decoded);
+    }).then(function (decoded) {
+      buffers[slot] = decoded;
+      sec[slot] = { s: 0, e: Math.min(C.END_DEFAULT_SEC, decoded.duration) };
+      if (slot === 'A') { rate = C.RATE_DEFAULT; srcRate = 1; }
+      stopToStart_();
       setState_(S.STOPPED);
       return { durationSec: decoded.duration };
     });
   }
 
-  /** 区間を更新。再生中は即時反映し、位置が区間外なら開始地点へ移す。 */
-  function setSection(startSec, endSec) {
-    var pos = getPositionSec();
-    secStart = startSec;
-    secEnd = endSec;
+  /** モードを設定する。再生は止まる。状態は、有効なスロットが読み込まれていればSTOPPED、なければNO_FILE */
+  function setMode(m) {
+    destroySource_();
+    keepStop_();
+    mode = m === C.MODE.DOUBLE ? C.MODE.DOUBLE : C.MODE.SINGLE;
+    combined = null; combinedKey = ''; combinedParts = []; curParts = [];
+    stopToStart_();
+    setState_(parts_().length ? S.STOPPED : S.NO_FILE);
+  }
+
+  /** 再生元を作り直す。上限（TOO_LONG）を超えたら、再生を止めて onError(TOO_LONG) */
+  function rebuild_(slot, pos) {
+    try {
+      createSource_(slot, pos);
+    } catch (e) {
+      if (e && e.message === 'TOO_LONG') {
+        destroySource_();
+        keepStop_();
+        stopToStart_();
+        setState_(S.STOPPED);
+        callbacks.onError(C.ERR.TOO_LONG);
+      } else {
+        throw e;
+      }
+    }
+  }
+
+  /** そのスロットの区間を更新。noApply が true なら、値を覚えるだけ（続けて playFromStart を呼ぶとき用）。 */
+  function setSection(startSec, endSec, slot, noApply) {
+    slot = slot === 'B' ? 'B' : 'A';
+    var loc = state === S.PLAYING ? locate_() : null;
+    sec[slot] = { s: startSec, e: endSec };
+    if (noApply) return;
     if (state === S.PLAYING) {
-      createSource_(inSection_(pos) ? pos : secStart);
-    } else if (state === S.PAUSED && inSection_(pausedPos)) {
+      var useSlot = loc.slot, usePos = loc.pos;
+      if (parts_().indexOf(useSlot) < 0 || !inSection_(useSlot, usePos)) { useSlot = firstSlot_(); usePos = sec[useSlot].s; }
+      rebuild_(useSlot, usePos);
+    } else if (state === S.PAUSED && parts_().indexOf(pausedSlot) >= 0 && inSection_(pausedSlot, pausedPos)) {
       /* 位置を維持 */
     } else if (state !== S.NO_FILE) {
-      pausedPos = secStart;
+      stopToStart_();
       if (state !== S.STOPPED) setState_(S.STOPPED);
     }
   }
 
   function play() {
-    if (!buffer || !ctx) return Promise.resolve();
-    var offset = (state === S.PAUSED) ? pausedPos : secStart;
-    if (!inSection_(offset)) offset = secStart;
+    if (!parts_().length || !ctx) return Promise.resolve();
+    var slot, pos;
+    if (state === S.PAUSED && parts_().indexOf(pausedSlot) >= 0 && inSection_(pausedSlot, pausedPos)) {
+      slot = pausedSlot; pos = pausedPos;
+    } else {
+      slot = firstSlot_(); pos = sec[slot].s;
+    }
     keepStart_();
     var go = function () {
-      createSource_(offset);
-      setState_(S.PLAYING);
+      try {
+        createSource_(slot, pos);
+        setState_(S.PLAYING);
+      } catch (e) {
+        if (e && e.message === 'TOO_LONG') {
+          destroySource_(); keepStop_(); stopToStart_(); setState_(S.STOPPED); callbacks.onError(C.ERR.TOO_LONG);
+        } else {
+          throw e;
+        }
+      }
     };
     if (ctx.state === 'running') {
       try { go(); } catch (e) { callbacks.onError(C.ERR.PLAY_BLOCKED); }
@@ -234,18 +380,20 @@
     ensureContext_();
   }
 
-  /** 開始地点へ移動して再生（区間移動・開始地点の編集で使う） */
+  /** 先頭のパートの開始地点へ移動して再生（区間移動・開始地点の編集で使う） */
   function playFromStart() {
-    if (!buffer || !ctx) return Promise.resolve();
-    pausedPos = secStart;
-    if (state === S.PLAYING) { createSource_(secStart); return Promise.resolve(); }
+    if (!parts_().length || !ctx) return Promise.resolve();
+    stopToStart_();
+    if (state === S.PLAYING) { rebuild_(pausedSlot, pausedPos); return Promise.resolve(); }
     state = S.STOPPED;
     return play();
   }
 
   function pause() {
     if (state !== S.PLAYING) return;
-    pausedPos = getPositionSec();
+    var loc = locate_();
+    pausedSlot = loc.slot;
+    pausedPos = loc.pos;
     destroySource_();
     // 一時停止中も無音audioは鳴らし続ける。止めてしまうと、iOSが「再生中のアプリ」から外し、
     // イヤホンやインカムの再生ボタンがアプリに届かなくなるため（v1.9）。
@@ -257,13 +405,17 @@
     if (state === S.NO_FILE) return;
     destroySource_();
     keepStop_();
-    pausedPos = secStart;
+    stopToStart_();
     setState_(S.STOPPED);
   }
 
   /** 倍速を設定する。再生中は現在位置を保存しておく（実際の切り替えは、続く playFromStart で行う） */
   function setRate(r) {
-    if (state === S.PLAYING && ctx && source) pausedPos = getPositionSec();
+    if (state === S.PLAYING && ctx && source) {
+      var loc = locate_();
+      pausedSlot = loc.slot;
+      pausedPos = loc.pos;
+    }
     rate = r;
   }
 
@@ -273,12 +425,14 @@
     init: init,
     loadFile: loadFile,
     setSection: setSection,
+    setMode: setMode,
     play: play,
     playFromStart: playFromStart,
-    setRate: setRate,
     pause: pause,
     stop: stop,
+    setRate: setRate,
     getPositionSec: getPositionSec,
+    getActiveSlot: getActiveSlot,
     getState: getState
   };
 })();
