@@ -1,4 +1,4 @@
-/* css/style.css / KEecoloop 見た目 / 仕様書 v2.7.1 4章 */
+/* css/style.css / KEecoloop 見た目 / 仕様書 v2.8 4章 */
 :root {
   --bg: #0C1016;
   --surface: #131922;
@@ -13,6 +13,10 @@
   --sub: #A9B4C3;
   --accent: #FFB020;
   --accent-ink: #1A1204;
+  --mark: #5EE6B0;
+  --mark-pressed: #38C48F;
+  --mark-ink: #0A0F0C;
+  --hint: #8A97A8;
   --mode: #6AA9FF;
   --mode-bg: #14233A;
   --mode-ink: #0A1626;
@@ -208,3 +212,14 @@ button:disabled { cursor: default; }
 }
 .prev-btn svg { color: var(--accent); }
 .prev-btn:active { background: #1A212C; }
+
+.hint { font-size: 12px; line-height: 1.5; color: var(--hint); }
+.hint-free { flex-shrink: 0; margin-bottom: -6px; }
+.card .hint { margin-bottom: -2px; }
+.mark-btn { background: var(--mark); color: var(--mark-ink); border-color: transparent; }
+.mark-btn.pressed, .mark-btn:active { background: var(--mark-pressed); color: var(--mark-ink); border-color: transparent; }
+.mark-btn:disabled { opacity: 0.4; }
+.next-row .next-btn { padding: 0 12px; }
+.next-row .next-main { font-size: 17px; gap: 6px; }
+.next-row .next-main svg { width: 18px; height: 18px; }
+.next-row .next-hint { font-size: 11px; line-height: 1.3; white-space: pre-line; }

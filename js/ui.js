@@ -1,4 +1,4 @@
-/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v2.7.1 4章・9.5章 / 版 2.7.1 */
+/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v2.8 4章・9.5章 / 版 2.8 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -14,7 +14,7 @@
       'btn-move-minus', 'input-move', 'btn-move-plus', 'txt-move-note', 'txt-message', 'btn-stop', 'btn-play',
       'icon-play', 'icon-pause', 'btn-next', 'txt-next-hint', 'txt-version',
       'banner-update', 'txt-update-main', 'txt-update-note',
-      'btn-all', 'btn-prev', 'btn-mode', 'input-file-b', 'slot-b', 'b-btn-eject', 'b-txt-file-label', 'b-txt-filename', 'b-txt-file-hint',
+      'btn-all', 'btn-prev', 'txt-hint-next', 'txt-hint-gap', 'txt-hint-rate', 'btn-mode', 'input-file-b', 'slot-b', 'b-btn-eject', 'b-txt-file-label', 'b-txt-filename', 'b-txt-file-hint',
       'b-txt-position', 'b-txt-duration', 'b-bar-track', 'b-bar-played', 'b-bar-marker', 'b-txt-bar-end'
     ].forEach(function (id) { el[id] = $(id); });
     el.card = document.querySelector('.card');
@@ -30,6 +30,7 @@
     collectElements_();
     bindEvents_(handlers);
     el['txt-version'].textContent = 'v' + C.APP_VERSION;
+    renderHints_();
   }
 
   function bindEvents_(h) {
@@ -136,6 +137,14 @@
     });
   }
 
+  /** 固定の説明文を書き込む（起動時に1回） */
+  function renderHints_() {
+    var H = C.HINT;
+    el['txt-hint-next'].textContent = H.PREFIX + H.NEXT;
+    el['txt-hint-gap'].textContent = H.PREFIX + H.GAP;
+    el['txt-hint-rate'].textContent = H.PREFIX + H.RATE;
+  }
+
   function setPlayButtonLook_(isPlaying) {
     // SVG要素には hidden 属性が効かないため、style.display で切り替える
     el['icon-play'].style.display = isPlaying ? 'none' : '';
@@ -223,9 +232,9 @@
     renderDigits_('B');
     el['input-move'].value = St.moveSec;
     var stepNow = U.calcStepSec(St.moveSec);
-    el['txt-move-note'].textContent = St.moveSec <= C.OVERLAP_SEC
-      ? '区間移動: 開始・終了をそのまま1秒進めます（移動時間が1秒のときだけの決まり）'
-      : '区間移動: 開始・終了を1秒戻してから、' + St.moveSec + '秒進めます（実質＋' + stepNow + '秒）';
+    el['txt-move-note'].textContent = C.HINT.PREFIX + (St.moveSec <= C.OVERLAP_SEC
+      ? C.HINT.MOVE_NOTE_1
+      : C.HINT.MOVE_NOTE_N.replace('{n}', St.moveSec).replace('{step}', stepNow));
     renderRate_();
     renderGap_();
     setControlsEnabled_(!noFile);

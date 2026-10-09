@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="css/style.css">
-<!-- index.html / KEecoloop 本体 / 仕様書 v2.7.1 4章 -->
+<!-- index.html / KEecoloop 本体 / 仕様書 v2.8 4章 -->
 </head>
 <body>
 <main class="app">
@@ -211,6 +211,7 @@
     </button>
   </section>
 
+  <div id="txt-hint-next" class="hint hint-free"></div>
   <div class="next-row">
     <button id="btn-prev" class="prev-btn" type="button" aria-label="前の区間へ戻る">
       <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M20 5.5 13 12l7 6.5zM11.5 5.5 4.5 12l7 6.5z" fill="currentColor"/></svg>
@@ -225,6 +226,7 @@
   </div>
 
   <section class="card card-move">
+    <div id="txt-move-note" class="hint"></div>
     <div class="interval-row">
       <label for="input-move" class="interval-label">移動時間</label>
       <div class="stepper">
@@ -240,20 +242,10 @@
         </button>
       </div>
     </div>
-    <div id="txt-move-note" class="move-note"></div>
-  </section>
-
-  <section class="card card-rate">
-    <div class="rate-row" role="group" aria-label="再生速度">
-      <button id="btn-rate-12" class="rate-btn" type="button" data-rate="1.2">1.2</button>
-      <button id="btn-rate-11" class="rate-btn" type="button" data-rate="1.1">1.1</button>
-      <button id="btn-rate-10" class="rate-btn" type="button" data-rate="1.0">1.0</button>
-      <button id="btn-rate-09" class="rate-btn" type="button" data-rate="0.9">0.9</button>
-      <button id="btn-rate-08" class="rate-btn" type="button" data-rate="0.8">0.8</button>
-    </div>
   </section>
 
   <section class="card card-rate card-gap">
+    <div id="txt-hint-gap" class="hint"></div>
     <div class="rate-row" role="group" aria-label="繰り返しの間の無音（秒）">
       <span class="gap-label">間（秒）</span>
       <button id="btn-gap-0" class="gap-btn" type="button" data-gap="0">なし</button>
@@ -261,6 +253,17 @@
       <button id="btn-gap-2" class="gap-btn" type="button" data-gap="2">2</button>
       <button id="btn-gap-3" class="gap-btn" type="button" data-gap="3">3</button>
       <button id="btn-gap-5" class="gap-btn" type="button" data-gap="5">5</button>
+    </div>
+  </section>
+
+  <section class="card card-rate">
+    <div id="txt-hint-rate" class="hint"></div>
+    <div class="rate-row" role="group" aria-label="再生速度">
+      <button id="btn-rate-12" class="rate-btn" type="button" data-rate="1.2">1.2</button>
+      <button id="btn-rate-11" class="rate-btn" type="button" data-rate="1.1">1.1</button>
+      <button id="btn-rate-10" class="rate-btn" type="button" data-rate="1.0">1.0</button>
+      <button id="btn-rate-09" class="rate-btn" type="button" data-rate="0.9">0.9</button>
+      <button id="btn-rate-08" class="rate-btn" type="button" data-rate="0.8">0.8</button>
     </div>
   </section>
 
