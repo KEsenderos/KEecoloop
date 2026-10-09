@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="css/style.css">
-<!-- index.html / KEecoloop 本体 / 仕様書 v1.1 4章 -->
+<!-- index.html / KEecoloop 本体 / 仕様書 v2.7.1 4章 -->
 </head>
 <body>
 <main class="app">
@@ -20,7 +20,7 @@
   <header class="topbar">
     <div class="brand"><span class="brand-ke">KE</span><span>ecoloop</span></div>
     <div class="topbar-right">
-    <button id="btn-mode" class="mode-btn" type="button">ダブルモード</button>
+    <button id="btn-mode" class="mode-btn" type="button">2区間モード</button>
     <button id="btn-eject" class="icon-btn" type="button" aria-label="ファイルを選ぶ">
       <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 5 4 15h16z" fill="currentColor"/><rect x="4" y="17.5" width="16" height="2.5" rx="1" fill="currentColor"/></svg>
     </button>
@@ -59,7 +59,7 @@
 
   <section class="card">
     <div id="row-start" class="time-row">
-      <div class="time-label">開始</div>
+      <button id="btn-mark-start" class="mark-btn" type="button" data-slot="A" data-mark="start" aria-label="今の位置を開始にする"><span>ここを</span><span>開始</span></button>
       <div class="digits">
         <div class="digit">
             <button id="btn-start-m10-up" class="digit-btn" type="button" data-target="start" data-unit="600" data-dir="1" aria-label="開始を10分増やす"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -86,7 +86,7 @@
     </div>
     <div class="time-sep"></div>
     <div id="row-end" class="time-row">
-      <div class="time-label">終了</div>
+      <button id="btn-mark-end" class="mark-btn" type="button" data-slot="A" data-mark="end" aria-label="今の位置を終了にする"><span>ここを</span><span>終了</span></button>
       <div class="digits">
         <div class="digit">
             <button id="btn-end-m10-up" class="digit-btn" type="button" data-target="end" data-unit="600" data-dir="1" aria-label="終了を10分増やす"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -139,7 +139,7 @@
 
   <section class="card">
     <div id="b-row-start" class="time-row">
-      <div class="time-label">開始</div>
+      <button id="b-btn-mark-start" class="mark-btn" type="button" data-slot="B" data-mark="start" aria-label="今の位置を開始にする"><span>ここを</span><span>開始</span></button>
       <div class="digits">
         <div class="digit">
             <button id="b-btn-start-m10-up" class="digit-btn" type="button" data-target="bstart" data-unit="600" data-dir="1" aria-label="開始を10分増やす"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -166,7 +166,7 @@
     </div>
     <div class="time-sep"></div>
     <div id="b-row-end" class="time-row">
-      <div class="time-label">終了</div>
+      <button id="b-btn-mark-end" class="mark-btn" type="button" data-slot="B" data-mark="end" aria-label="今の位置を終了にする"><span>ここを</span><span>終了</span></button>
       <div class="digits">
         <div class="digit">
             <button id="b-btn-end-m10-up" class="digit-btn" type="button" data-target="bend" data-unit="600" data-dir="1" aria-label="終了を10分増やす"><svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
@@ -211,12 +211,18 @@
     </button>
   </section>
 
-  <button id="btn-next" class="next-btn" type="button">
-    <span class="next-main">区間移動
-      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 5.5 11 12l-7 6.5zM12.5 5.5 19.5 12l-7 6.5z" fill="currentColor"/></svg>
-    </span>
-    <span id="txt-next-hint" class="next-hint">＋4秒</span>
-  </button>
+  <div class="next-row">
+    <button id="btn-prev" class="prev-btn" type="button" aria-label="前の区間へ戻る">
+      <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M20 5.5 13 12l7 6.5zM11.5 5.5 4.5 12l7 6.5z" fill="currentColor"/></svg>
+      <span>戻る</span>
+    </button>
+    <button id="btn-next" class="next-btn" type="button">
+      <span class="next-main">区間移動
+        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4 5.5 11 12l-7 6.5zM12.5 5.5 19.5 12l-7 6.5z" fill="currentColor"/></svg>
+      </span>
+      <span id="txt-next-hint" class="next-hint">＋4秒</span>
+    </button>
+  </div>
 
   <section class="card card-move">
     <div class="interval-row">
@@ -247,6 +253,17 @@
     </div>
   </section>
 
+  <section class="card card-rate card-gap">
+    <div class="rate-row" role="group" aria-label="繰り返しの間の無音（秒）">
+      <span class="gap-label">間（秒）</span>
+      <button id="btn-gap-0" class="gap-btn" type="button" data-gap="0">なし</button>
+      <button id="btn-gap-1" class="gap-btn" type="button" data-gap="1">1</button>
+      <button id="btn-gap-2" class="gap-btn" type="button" data-gap="2">2</button>
+      <button id="btn-gap-3" class="gap-btn" type="button" data-gap="3">3</button>
+      <button id="btn-gap-5" class="gap-btn" type="button" data-gap="5">5</button>
+    </div>
+  </section>
+
   <div id="txt-version" class="version"></div>
 </main>
 <noscript>このアプリはJavaScriptが必要です。</noscript>
@@ -254,6 +271,7 @@
 <script src="js/config.js"></script>
 <script src="js/utils.js"></script>
 <script src="js/state.js"></script>
+<script src="js/store.js"></script>
 <script src="js/stretch.js"></script>
 <script src="js/engine.js"></script>
 <script src="js/mediaSession.js"></script>

@@ -1,4 +1,4 @@
-/* js/engine.js / 再生エンジン（RE.Engine）Web Audio方式 / 仕様書 v2.5 5.5・5.9・9.3章 / 版 1.9.0
+/* js/engine.js / 再生エンジン（RE.Engine）Web Audio方式 / 仕様書 v2.7.1 5.5・5.9・9.3章 / 版 2.7.1
  * 画面（DOM）にも RE.State にも触れない。状態の変化は callbacks.onStateChange で知らせるだけ。
  * スロット "A"（1つ目）と "B"（2つ目）の2つのファイルを持てる。ダブルモードでは両方の区間を交互に再生する。 */
 (function () {
@@ -15,6 +15,7 @@
   var keepAudio = null;
   var state = S.NO_FILE;
   var rate = 1;            // 倍速（State.rate と同じ値。Main が setRate で知らせる）
+  var gap = 0;             // 繰り返しの間の無音（秒。Main が setGap で知らせる）
   var srcRate = 1;         // 現在の再生元を作ったときの倍速（位置の換算に使う）
   var curParts = [];       // 現在の再生元のパート [{slot, s, e, len}]（lenは「つなげる」方式のときだけ。秒）
   var combined = null;     // 「つなげる」方式の音声
@@ -101,8 +102,8 @@
   function prepareCombined_(slots) {
     var total = 0, i;
     for (i = 0; i < slots.length; i++) total += Math.max(0, sec[slots[i]].e - sec[slots[i]].s);
-    if (slots.length > 1 && total > C.DOUBLE_MAX_SECTION_SEC) throw tooLong_();
-    var key = mode + '|' + rate + '|' + slots.map(function (sl) { return sl + ':' + sec[sl].s + ':' + sec[sl].e; }).join(',');
+    if (total > C.DOUBLE_MAX_SECTION_SEC) throw tooLong_();
+    var key = mode + '|' + rate + '|' + gap + '|' + slots.map(function (sl) { return sl + ':' + sec[sl].s + ':' + sec[sl].e; }).join(',');
     if (combined && key === combinedKey) return;
     combined = null; combinedKey = ''; combinedParts = [];
 
@@ -122,6 +123,8 @@
       chans = Math.max(chans, seg.buf.numberOfChannels);
       totalLen += seg.len;
     }
+    totalLen = 0;
+    for (i = 0; i < segs.length; i++) { segs[i].gapLen = Math.round(gap * sr); totalLen += segs[i].len + segs[i].gapLen; }
     var out = ctx.createBuffer(chans, totalLen, sr);
     var at = 0;
     for (i = 0; i < segs.length; i++) {
@@ -131,8 +134,8 @@
         var to = out.getChannelData(c);
         to.set(from.subarray(sg.from, sg.from + sg.len), at);
       }
-      combinedParts.push({ slot: sg.slot, s: sg.s, e: sg.e, len: sg.len / sr });
-      at += sg.len;
+      combinedParts.push({ slot: sg.slot, s: sg.s, e: sg.e, len: sg.len / sr, gap: sg.gapLen / sr });
+      at += sg.len + sg.gapLen;
     }
     combined = out;
     combinedKey = key;
@@ -146,7 +149,7 @@
     if (slots.indexOf(slot) < 0 || !inSection_(slot, pos)) { slot = slots[0]; pos = sec[slot].s; }
     var src = ctx.createBufferSource();
     segCtx = ctx.currentTime;
-    if (slots.length === 1 && rate === 1) {
+    if (slots.length === 1 && rate === 1 && gap === 0) {
       // 元の音声そのまま（従来どおり）
       var b = buffers[slot];
       source = src;
@@ -164,7 +167,7 @@
       srcRate = rate;
       curParts = combinedParts.slice();
       var before = 0;
-      for (var i = 0; i < combinedParts.length && combinedParts[i].slot !== slot; i++) before += combinedParts[i].len;
+      for (var i = 0; i < combinedParts.length && combinedParts[i].slot !== slot; i++) before += combinedParts[i].len + combinedParts[i].gap;
       segOffsetS = Math.min(Math.max(0, before + (pos - sec[slot].s) / rate), Math.max(0, combined.duration - 0.001));
       src.buffer = combined;
       src.loopStart = 0;
@@ -206,10 +209,14 @@
       if (total <= 0) return { slot: curParts[0].slot, pos: curParts[0].s };
       var u = (segOffsetS + (ctx.currentTime - segCtx)) % total;
       for (var i = 0; i < curParts.length; i++) {
-        if (u < curParts[i].len || i === curParts.length - 1) {
-          return { slot: curParts[i].slot, pos: curParts[i].s + Math.min(u, curParts[i].len) * srcRate };
+        if (u < curParts[i].len) {
+          return { slot: curParts[i].slot, pos: curParts[i].s + u * srcRate };
         }
-        u -= curParts[i].len;
+        if (u < curParts[i].len + curParts[i].gap || i === curParts.length - 1) {
+          // 無音の間は、そのパートの開始地点を返す（一時停止してもその区間の頭から再開できる）
+          return { slot: curParts[i].slot, pos: curParts[i].s };
+        }
+        u -= curParts[i].len + curParts[i].gap;
       }
     }
     if (state === S.PAUSED) return { slot: pausedSlot, pos: pausedPos };
@@ -419,6 +426,13 @@
     rate = r;
   }
 
+  /** 繰り返しの間の無音（秒）を設定する。再生中なら、今の位置から作り直す */
+  function setGap(g) {
+    var loc = state === S.PLAYING && ctx && source ? locate_() : null;
+    gap = Number(g) > 0 ? Number(g) : 0;
+    if (loc) rebuild_(loc.slot, inSection_(loc.slot, loc.pos) ? loc.pos : sec[loc.slot].s);
+  }
+
   function getState() { return state; }
 
   RE.Engine = {
@@ -431,6 +445,7 @@
     pause: pause,
     stop: stop,
     setRate: setRate,
+    setGap: setGap,
     getPositionSec: getPositionSec,
     getActiveSlot: getActiveSlot,
     getState: getState

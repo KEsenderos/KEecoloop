@@ -1,11 +1,11 @@
-/* js/config.js / 定数（RE.Config） / 仕様書 v1.1 7章 / 版 1.9.0 */
+/* js/config.js / 定数（RE.Config） / 仕様書 v2.7.1 7章 / 版 2.7.1 */
 (function () {
   'use strict';
   window.RE = window.RE || {};
 
   RE.Config = Object.freeze({
     APP_NAME: 'KEecoloop',
-    APP_VERSION: '1.9.0',
+    APP_VERSION: '2.7.1',
     ENGINE_TYPE: 'WEB_AUDIO',
     MOVE_SEC_MIN: 1,
     MOVE_SEC_MAX: 60,
@@ -30,7 +30,15 @@
     AUDIO_MONO: false,
     // ファイル選択欄の accept 属性。音声だけに絞り、iPhoneで「写真ライブラリ」「写真またはビデオを撮る」を出さない。
     // 空文字 '' にすると accept 属性を付けない（iPhoneで音声が灰色になって選べない場合の戻し先）。
-    ACCEPT_AUDIO: 'audio/*,.mp3,.m4a,.wav,.aac,.flac,.ogg',
+    ACCEPT_AUDIO: '.mp3,.m4a,.wav,.aac,.flac,.ogg,audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav,audio/aac,audio/flac,audio/ogg',
+    GAP_OPTIONS: Object.freeze([0, 1, 2, 3, 5]),
+    GAP_DEFAULT: 0,
+    STORAGE_KEY_GAP: 're.gapSec',
+    STORAGE_KEY_RESTORING: 're.restoring',
+    DB_NAME: 'keecoloop-db',
+    DB_VERSION: 1,
+    SAVE_MAX_BYTES: 41943040,
+    RESTORE_TIMEOUT_MS: 4000,
     UI_REFRESH_MS: 250,
     MINUTES_MAX_DIGITS: 2,
     BAR_MARKER_MIN_PX: 8,
@@ -51,7 +59,12 @@
       RATE_RESET_LONG: '区間が長いため、倍速を1.0に戻しました',
       UPDATE_AVAILABLE: '新しい版があります。ここをタップして更新',
       UPDATE_NOTE: '選んだファイルは選び直しになります',
-      DOUBLE_TOO_LONG: '2つの区間の合計が長すぎます（40分以内にしてください）',
+      DOUBLE_TOO_LONG: '区間の合計が長すぎます（40分以内にしてください）',
+      REACHED_START: '最初の区間です',
+      MARK_NEED_PLAY: '再生中に押してください',
+      MARK_OTHER_SLOT: '今鳴っている側の「ここを」ボタンを押してください',
+      RESTORE_FAILED: '前回のファイルを読み込めませんでした。⏏ で選んでください',
+      RESTORE_SKIPPED: '前回の読み込みが途中で止まったため、自動再開をやめました。⏏ で選んでください',
       NO_B_FILE_SELECTED: '2つ目の音声を選ぶには、2つ目の ⏏ を押してください'
     })
   });

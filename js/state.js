@@ -1,4 +1,4 @@
-/* js/state.js / 状態変数の保管（RE.State） / 仕様書 v1.1 8章・9.2章 / 版 1.9.0 */
+/* js/state.js / 状態変数の保管（RE.State） / 仕様書 v2.7.1 8章・9.2章 / 版 2.7.1 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -15,6 +15,7 @@
     durationSecB: 0,
     startSecB: 0,
     endSecB: 0,
+    gapSec: C.GAP_DEFAULT,
     playerState: C.PLAYER_STATE.NO_FILE,
 
     /** 全変数を初期値へ（moveSecは保存値） */
@@ -23,6 +24,7 @@
       this.durationSec = 0;
       this.moveSec = RE.Utils.loadMoveSec();
       this.rate = C.RATE_DEFAULT;
+      this.gapSec = RE.Utils.loadGapSec();
       this.mode = C.MODE.SINGLE;
       this.fileNameB = '';
       this.durationSecB = 0;

@@ -1,16 +1,40 @@
-/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v1.1 5.3・9.6章 / 版 1.9.0 */
+/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v2.7.1 5.3・9.6章 / 版 2.7.1 */
 (function () {
   'use strict';
   var C = RE.Config;
   var S = C.PLAYER_STATE;
   var U = RE.Utils;
   var loadToken = 0;
+  var busy = 0;            // 読み込み中のファイル数（読み込み中は保存しない）
+  var restoring = false;   // 前回の続きを読み込み中
+  var userTouched = false; // 起動後に本人がファイル選択・モード切替をした（自動再開を打ち切る）
+  var saveTimer = null;
+
+  /** 画面を更新し、区間・モードの記録を（少し待ってから）保存する */
+  function render_() {
+    RE.UI.render();
+    persist_();
+  }
+
+  function persist_() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(function () {
+      var St = RE.State;
+      if (busy > 0 || restoring || (!St.fileName && !St.fileNameB)) return;
+      RE.Store.saveMeta({
+        mode: St.mode,
+        A: St.fileName ? { s: St.startSec, e: St.endSec } : null,
+        B: St.fileNameB ? { s: St.startSecB, e: St.endSecB } : null,
+        savedAt: Date.now()
+      });
+    }, 400);
+  }
 
   function onEngineStateChange_(state) {
     // ファイル読込中に届く状態通知は無視する（画面と State の食い違いを防ぐ）
     if (!RE.State.fileName && !RE.State.fileNameB && state !== S.NO_FILE) return;
     RE.State.playerState = state;
-    RE.UI.render();
+    render_();
     if (state === S.PLAYING) RE.MediaSession.register();
     RE.MediaSession.setPlaybackState(state);
   }
@@ -66,7 +90,7 @@
   function applyMove_(n) {
     RE.State.moveSec = n;
     U.saveMoveSec(n);
-    RE.UI.render();   // 移動時間は区間・再生には影響しない（次の区間移動から反映）
+    render_();   // 移動時間は区間・再生には影響しない（次の区間移動から反映）
   }
 
   /** 倍速で使う区間の長さの合計（シングル: A。ダブル: A+B） */
@@ -102,7 +126,7 @@
     enforceRateLimit_();
     pushSection_(slot);
     if (St.playerState === S.PLAYING) RE.Engine.playFromStart(); else RE.Engine.stop();
-    RE.UI.render();
+    render_();
   }
 
   /** 終了地点を変える（開始地点・移動時間は変えない） */
@@ -111,34 +135,113 @@
     if (slot === 'B') St.endSecB = sec; else St.endSec = sec;
     enforceRateLimit_();
     pushSection_(slot);
-    RE.UI.render();
+    render_();
   }
 
-  function loadInto_(file, slot) {
+  /** 区間の記録が使えるか（0 <= s < e <= 全長） */
+  function validSec_(sec, dur) {
+    return !!sec && isFinite(sec.s) && isFinite(sec.e) && sec.s >= 0 && sec.e > sec.s && sec.e <= dur + 0.001;
+  }
+
+  /**
+   * ファイルを読み込む。opts = { sec: 復元する区間 {s,e} | undefined, noSave: true なら保存し直さない, restore: true なら自動再開 }
+   * 成功なら true、失敗・無効なら false を返す Promise。
+   */
+  function loadInto_(file, slot, opts) {
+    opts = opts || {};
     var St = RE.State;
     var token = ++loadToken;
+    busy++;
     RE.UI.showMessage(C.MSG.FILE_LOADING);
     if (slot === 'B') St.resetB(); else St.resetA();
     St.playerState = playableState_();
     RE.UI.render();
-    RE.Engine.loadFile(file, slot).then(function (r) {
-      if (token !== loadToken) return;
+    return RE.Engine.loadFile(file, slot).then(function (r) {
+      busy--;
+      if (token !== loadToken) return false;
       if (slot === 'B') St.setFileB(file.name, r.durationSec); else St.setFile(file.name, r.durationSec);
+      if (validSec_(opts.sec, r.durationSec)) {
+        if (slot === 'B') { St.startSecB = opts.sec.s; St.endSecB = opts.sec.e; }
+        else { St.startSec = opts.sec.s; St.endSec = opts.sec.e; }
+      }
       if (slot === 'A') RE.Engine.setRate(St.rate);
       pushSection_(slot);
       enforceRateLimit_();
       St.playerState = S.STOPPED;
       RE.UI.clearMessage();
-      RE.UI.render();
+      render_();
       setMetadata_();
       RE.MediaSession.register();
       RE.MediaSession.setPlaybackState(S.STOPPED);
+      if (!opts.noSave) RE.Store.saveFile(slot, file);
+      return true;
     }).catch(function () {
-      if (token !== loadToken) return;
+      busy--;
+      if (token !== loadToken) return false;
       if (slot === 'B') St.resetB(); else St.resetA();
       St.playerState = playableState_();
-      RE.UI.showMessage(C.MSG.FILE_ERROR);
-      RE.UI.render();
+      RE.UI.showMessage(opts.restore ? C.MSG.RESTORE_FAILED : C.MSG.FILE_ERROR);
+      render_();
+      if (opts.restore) RE.Store.clearSlot(slot);
+      return false;
+    });
+  }
+
+  function readBlob_(blob) {
+    if (blob.arrayBuffer) return blob.arrayBuffer();
+    return new Promise(function (resolve, reject) {
+      var fr = new FileReader();
+      fr.onload = function () { resolve(fr.result); };
+      fr.onerror = function () { reject(fr.error); };
+      fr.readAsArrayBuffer(blob);
+    });
+  }
+
+  function setRestoreFlag_(on) {
+    try {
+      if (on) window.localStorage.setItem(C.STORAGE_KEY_RESTORING, '1');
+      else window.localStorage.removeItem(C.STORAGE_KEY_RESTORING);
+    } catch (e) { /* 無視 */ }
+  }
+
+  /**
+   * 前回のファイル・区間を自動で読み込む（安全設計）。
+   * ・前回の自動再開が途中で止まっていた（印が残っている）場合は、やらずに記録を消す（強制終了のくり返しを防ぐ）。
+   * ・保存が無い／読み出せない／ファイルが壊れている場合は、何もしない、またはメッセージを出して⏏に任せる。
+   * ・本人が先にファイルを選んだら、自動再開は打ち切る。
+   */
+  function restoreLast_() {
+    var flag = null;
+    try { flag = window.localStorage.getItem(C.STORAGE_KEY_RESTORING); } catch (e) { /* 無視 */ }
+    if (flag === '1') {
+      setRestoreFlag_(false);
+      RE.Store.clearAll();
+      RE.UI.showMessage(C.MSG.RESTORE_SKIPPED);
+      return;
+    }
+    RE.Store.loadAll().then(function (d) {
+      if (userTouched || !d || (!d.A && !d.B)) return;
+      var meta = d.meta || {};
+      var St = RE.State;
+      var dbl = meta.mode === C.MODE.DOUBLE && !!d.B;
+      restoring = true;
+      setRestoreFlag_(true);
+      if (dbl) { St.mode = C.MODE.DOUBLE; RE.Engine.setMode(St.mode); }
+      function wrap(rec) { return { name: rec.name, arrayBuffer: function () { return readBlob_(rec.blob); } }; }
+      function step(rec, slot) {
+        if (userTouched || !rec || !rec.blob) return Promise.resolve(true);
+        return loadInto_(wrap(rec), slot, { sec: meta[slot], noSave: true, restore: true });
+      }
+      return step(d.A, 'A').then(function (okA) {
+        return okA ? step(dbl ? d.B : null, 'B') : false;
+      }).then(function () {
+        restoring = false;
+        setRestoreFlag_(false);
+        render_();
+      });
+    }).catch(function () {
+      restoring = false;
+      setRestoreFlag_(false);
     });
   }
 
@@ -166,19 +269,20 @@
 
     onEjectB: function () { RE.UI.openFilePickerB(); },
 
-    onFileSelected: function (file) { loadInto_(file, 'A'); },
+    onFileSelected: function (file) { userTouched = true; loadInto_(file, 'A'); },
 
-    onFileSelectedB: function (file) { loadInto_(file, 'B'); },
+    onFileSelectedB: function (file) { userTouched = true; loadInto_(file, 'B'); },
 
     /** シングル⇔ダブルの切り替え。再生は止まる。2つ目のファイルは切り替えても残す */
     onModeToggle: function () {
       var St = RE.State;
+      userTouched = true;
       St.mode = St.mode === C.MODE.DOUBLE ? C.MODE.SINGLE : C.MODE.DOUBLE;
       RE.Engine.setMode(St.mode);
       St.playerState = playableState_();
       RE.UI.clearMessage();
       enforceRateLimit_();
-      RE.UI.render();
+      render_();
       if (St.fileName || St.fileNameB) { setMetadata_(); RE.MediaSession.setPlaybackState(St.playerState); }
     },
 
@@ -204,7 +308,7 @@
       enforceRateLimit_();
       if (useA) pushSection_('A');
       if (useB) pushSection_('B');
-      RE.UI.render();
+      render_();
       if (St.playerState === S.PLAYING) RE.Engine.playFromStart(); else RE.Engine.stop();
     },
 
@@ -221,8 +325,54 @@
       if (useA) { St.startSec += step; St.endSec = Math.min(St.endSec + step, St.durationSec); pushSection_('A'); }
       if (useB) { St.startSecB += step; St.endSecB = Math.min(St.endSecB + step, St.durationSecB); pushSection_('B'); }
       RE.UI.clearMessage();
-      RE.UI.render();
+      render_();
       RE.Engine.playFromStart();
+    },
+
+    /** 前の区間へ戻る: 開始・終了を stepSec だけ戻して再生する。2区間モードでは両方を同じだけ戻す */
+    onPrev: function () {
+      var St = RE.State;
+      if (St.playerState === S.NO_FILE) { RE.UI.showMessage(C.MSG.NO_FILE_SELECTED); return; }
+      var useA = !!St.fileName, useB = St.mode === C.MODE.DOUBLE && !!St.fileNameB;
+      var delta = U.calcStepSec(St.moveSec);
+      if (useA) delta = Math.min(delta, St.startSec);
+      if (useB) delta = Math.min(delta, St.startSecB);
+      if (!(delta > 0)) { RE.UI.showMessage(C.MSG.REACHED_START); return; }
+      if (useA) { St.startSec -= delta; St.endSec -= delta; pushSection_('A'); }
+      if (useB) { St.startSecB -= delta; St.endSecB -= delta; pushSection_('B'); }
+      RE.UI.clearMessage();
+      render_();
+      RE.Engine.playFromStart();
+    },
+
+    /** 「ここを開始／終了」: 今鳴っている位置を、そのスロットの開始／終了地点にする */
+    onMark: function (slot, which) {
+      var St = RE.State;
+      var isB = slot === 'B';
+      if (!(isB ? St.fileNameB : St.fileName)) return;
+      if (St.playerState !== S.PLAYING && St.playerState !== S.PAUSED) { RE.UI.showMessage(C.MSG.MARK_NEED_PLAY); return; }
+      if (RE.Engine.getActiveSlot() !== slot) { RE.UI.showMessage(C.MSG.MARK_OTHER_SLOT); return; }
+      var pos = RE.Engine.getPositionSec();
+      var s0 = isB ? St.startSecB : St.startSec, e0 = isB ? St.endSecB : St.endSec, dur = isB ? St.durationSecB : St.durationSec;
+      RE.UI.clearMessage();
+      if (which === 'start') {
+        var n = U.clamp(Math.floor(pos), 0, Math.max(Math.ceil(e0) - 1, 0));
+        if (n !== s0) applyStart_(n, slot);
+      } else {
+        var m = U.clamp(Math.ceil(pos), s0 + 1, dur);
+        if (m !== e0) applyEnd_(m, slot);
+      }
+    },
+
+    /** 繰り返しの間の無音（秒）を選ぶ。再生中なら、今の位置から切り替わる */
+    onGapSelect: function (g) {
+      var St = RE.State;
+      if (St.playerState === S.NO_FILE) { RE.UI.showMessage(C.MSG.NO_FILE_SELECTED); return; }
+      St.gapSec = g;
+      U.saveGapSec(g);
+      RE.Engine.setGap(g);
+      RE.UI.clearMessage();
+      render_();
     },
 
     /** 開始地点の桁の ▲▼。deltaSec = ±600／±60／±10／±1。範囲の端では端の値に止める */
@@ -273,7 +423,7 @@
       St.rate = rate;
       RE.Engine.setRate(rate);
       RE.UI.clearMessage();
-      RE.UI.render();
+      render_();
       RE.Engine.playFromStart();
     },
 
@@ -283,7 +433,7 @@
       var n = Math.round(Number(raw));
       if (raw === '' || !isFinite(Number(raw))) {
         RE.UI.showMessage(C.MSG.MOVE_SEC_INVALID);
-        RE.UI.render();
+        render_();
         return;
       }
       var clamped = U.clamp(n, C.MOVE_SEC_MIN, C.MOVE_SEC_MAX);
@@ -305,6 +455,8 @@
     RE.State.init();
     RE.UI.init(handlers);
     RE.Engine.init({ onStateChange: onEngineStateChange_, onError: onEngineError_ });
+    RE.Engine.setGap(RE.State.gapSec);
+    RE.Store.requestPersist();
     RE.MediaSession.init({
       // イヤホン・インカムのボタンは「再生／一時停止」を1つで兼ねる。iOSが現在の状態を取り違えて
       // 逆の命令を送ってくることがあるため、命令の名前ではなく、アプリの実際の状態で切り替える（v1.9）。
@@ -317,11 +469,12 @@
       },
       onNext: function () { handlers.onNext(); }
     });
-    RE.UI.render();
+    render_();
     registerServiceWorker_();
+    restoreLast_();
     setInterval(refreshPosition_, C.UI_REFRESH_MS);
     document.addEventListener('visibilitychange', function () {
-      if (!document.hidden) { refreshPosition_(); RE.UI.render(); checkUpdate_(); }
+      if (!document.hidden) { refreshPosition_(); render_(); checkUpdate_(); }
     });
   }
 

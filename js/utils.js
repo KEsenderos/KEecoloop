@@ -1,4 +1,4 @@
-/* js/utils.js / 時間の変換・計算・保存の補助（RE.Utils） / 仕様書 v1.1 9.1章 / 版 1.4.1 */
+/* js/utils.js / 時間の変換・計算・保存の補助（RE.Utils） / 仕様書 v2.7.1 9.1章 / 版 2.7.1 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -59,7 +59,21 @@
     try { window.localStorage.setItem(C.STORAGE_KEY_MOVE, String(n)); } catch (e) { /* 何もしない */ }
   }
 
+  function loadGapSec() {
+    try {
+      var n = parseInt(window.localStorage.getItem(C.STORAGE_KEY_GAP), 10);
+      if (C.GAP_OPTIONS.indexOf(n) >= 0) return n;
+    } catch (e) { /* 既定値 */ }
+    return C.GAP_DEFAULT;
+  }
+
+  function saveGapSec(n) {
+    try { window.localStorage.setItem(C.STORAGE_KEY_GAP, String(n)); } catch (e) { /* 何もしない */ }
+  }
+
   RE.Utils = {
+    loadGapSec: loadGapSec,
+    saveGapSec: saveGapSec,
     pad2: pad2,
     formatTime: formatTime,
     toHalfWidth: toHalfWidth,

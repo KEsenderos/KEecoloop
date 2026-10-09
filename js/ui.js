@@ -1,4 +1,4 @@
-/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v1.1 4章・9.5章 / 版 1.9.0 */
+/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v2.7.1 4章・9.5章 / 版 2.7.1 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -14,7 +14,7 @@
       'btn-move-minus', 'input-move', 'btn-move-plus', 'txt-move-note', 'txt-message', 'btn-stop', 'btn-play',
       'icon-play', 'icon-pause', 'btn-next', 'txt-next-hint', 'txt-version',
       'banner-update', 'txt-update-main', 'txt-update-note',
-      'btn-all', 'btn-mode', 'input-file-b', 'slot-b', 'b-btn-eject', 'b-txt-file-label', 'b-txt-filename', 'b-txt-file-hint',
+      'btn-all', 'btn-prev', 'btn-mode', 'input-file-b', 'slot-b', 'b-btn-eject', 'b-txt-file-label', 'b-txt-filename', 'b-txt-file-hint',
       'b-txt-position', 'b-txt-duration', 'b-bar-track', 'b-bar-played', 'b-bar-marker', 'b-txt-bar-end'
     ].forEach(function (id) { el[id] = $(id); });
     el.card = document.querySelector('.card');
@@ -55,10 +55,11 @@
     el['btn-play'].addEventListener('click', function () { commitInput_(); h.onPlayPause(); });
     el['btn-stop'].addEventListener('click', function () { commitInput_(); h.onStop(); });
     el['btn-next'].addEventListener('click', function () { commitInput_(); h.onNext(); });
+    el['btn-prev'].addEventListener('click', function () { commitInput_(); h.onPrev(); });
     el['btn-all'].addEventListener('click', function () { commitInput_(); h.onSelectAll(); });
     // タップした瞬間にボタンの色を変え、指を離すと戻す（iPhoneは :active だけでは確実に変わらないため）。
     // 一瞬のタップでも色の変化が見えるよう、最低 PRESS_MIN_MS は色を保つ。
-    Array.prototype.forEach.call(document.querySelectorAll('.digit-btn, .rate-btn, .mode-btn'), function (btn) {
+    Array.prototype.forEach.call(document.querySelectorAll('.digit-btn, .rate-btn, .gap-btn, .mark-btn, .mode-btn'), function (btn) {
       var downAt = 0, timer = null;
       function release() {
         if (!downAt) return;
@@ -85,6 +86,14 @@
         else h.onEndStepB(delta);
       });
     });
+    // 「ここを開始／終了」ボタン（data-slot / data-mark）
+    Array.prototype.forEach.call(document.querySelectorAll('.mark-btn'), function (btn) {
+      btn.addEventListener('click', function () { h.onMark(btn.getAttribute('data-slot'), btn.getAttribute('data-mark')); });
+    });
+    // 繰り返しの間の無音ボタン（data-gap）
+    Array.prototype.forEach.call(document.querySelectorAll('.gap-btn'), function (btn) {
+      btn.addEventListener('click', function () { commitInput_(); h.onGapSelect(Number(btn.getAttribute('data-gap'))); });
+    });
     // 倍速ボタン（data-rate）
     Array.prototype.forEach.call(document.querySelectorAll('.rate-btn'), function (btn) {
       btn.addEventListener('click', function () { commitInput_(); h.onRateSelect(Number(btn.getAttribute('data-rate'))); });
@@ -97,12 +106,15 @@
   function setControlsEnabled_(enabled) {
     var St = RE.State;
     var loadedA = !!St.fileName, loadedB = !!St.fileNameB;
-    Array.prototype.forEach.call(document.querySelectorAll('.rate-btn'), function (b) { b.disabled = !enabled; });
+    Array.prototype.forEach.call(document.querySelectorAll('.rate-btn, .gap-btn'), function (b) { b.disabled = !enabled; });
+    Array.prototype.forEach.call(document.querySelectorAll('.mark-btn'), function (b) {
+      b.disabled = b.getAttribute('data-slot') === 'B' ? !loadedB : !loadedA;
+    });
     Array.prototype.forEach.call(document.querySelectorAll('.digit-btn'), function (b) {
       var t = b.getAttribute('data-target');
       b.disabled = (t === 'bstart' || t === 'bend') ? !loadedB : !loadedA;
     });
-    ['btn-move-minus', 'input-move', 'btn-move-plus', 'btn-stop', 'btn-play', 'btn-all', 'btn-next']
+    ['btn-move-minus', 'input-move', 'btn-move-plus', 'btn-stop', 'btn-play', 'btn-all', 'btn-prev', 'btn-next']
       .forEach(function (id) { el[id].disabled = !enabled; });
     el.card.classList.toggle('disabled', !loadedA);
     el.cardB.classList.toggle('disabled', !loadedB);
@@ -111,6 +123,14 @@
   function renderRate_() {
     Array.prototype.forEach.call(document.querySelectorAll('.rate-btn'), function (b) {
       var on = Number(b.getAttribute('data-rate')) === RE.State.rate;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+  }
+
+  function renderGap_() {
+    Array.prototype.forEach.call(document.querySelectorAll('.gap-btn'), function (b) {
+      var on = Number(b.getAttribute('data-gap')) === RE.State.gapSec;
       b.classList.toggle('active', on);
       b.setAttribute('aria-pressed', on ? 'true' : 'false');
     });
@@ -181,7 +201,7 @@
     var dbl = St.mode === C.MODE.DOUBLE;
     var noFile = St.playerState === S.NO_FILE;
     var noA = !St.fileName, noB = !St.fileNameB;
-    el['btn-mode'].textContent = dbl ? 'シングルモード' : 'ダブルモード';
+    el['btn-mode'].textContent = dbl ? '1区間モード' : '2区間モード';
     el['slot-b'].hidden = !dbl;
     el['txt-filename'].textContent = noA ? 'ファイル未選択' : St.fileName;
     el['txt-filename'].classList.toggle('empty', noA);
@@ -207,6 +227,7 @@
       ? '区間移動: 開始・終了をそのまま1秒進めます（移動時間が1秒のときだけの決まり）'
       : '区間移動: 開始・終了を1秒戻してから、' + St.moveSec + '秒進めます（実質＋' + stepNow + '秒）';
     renderRate_();
+    renderGap_();
     setControlsEnabled_(!noFile);
     setPlayButtonLook_(St.playerState === S.PLAYING);
     renderBar_('A');
