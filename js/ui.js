@@ -1,4 +1,4 @@
-/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v2.8 4章・9.5章 / 版 2.8 */
+/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v2.8.2 4章・9.5章 / 版 2.8.2 */
 (function () {
   'use strict';
   var C = RE.Config;
