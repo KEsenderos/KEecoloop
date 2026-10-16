@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="css/style.css">
-<!-- index.html / KEecoloop 本体 / 仕様書 v2.9.7 4章 -->
+<!-- index.html / KEecoloop 本体 / 仕様書 v2.9.8 4章 -->
 </head>
 <body>
 <main class="app">
@@ -195,10 +195,6 @@
 
   </div>
 
-  <div class="memo-save-row">
-    <button id="btn-memo-save" class="memo-save-btn" type="button" data-slot="A" aria-label="今の開始・終了を区間メモに保存">区間保存</button>
-    <button id="b-btn-memo-save" class="memo-save-btn" hidden type="button" data-slot="B" aria-label="今の開始・終了を区間メモに保存">区間保存</button>
-  </div>
   <div id="txt-message" class="message" role="status" aria-live="polite"></div>
 
   <section class="controls">
@@ -271,6 +267,10 @@
     </div>
   </section>
 
+  <div class="memo-save-row">
+    <button id="btn-memo-save" class="memo-save-btn" type="button" data-slot="A" aria-label="今の開始・終了を区間メモに保存">区間保存</button>
+    <button id="b-btn-memo-save" class="memo-save-btn" hidden type="button" data-slot="B" aria-label="今の開始・終了を区間メモに保存">区間保存</button>
+  </div>
   <section class="card card-memo">
     <div class="memo-head">区間メモ</div>
     <div id="txt-hint-memo" class="hint"></div>

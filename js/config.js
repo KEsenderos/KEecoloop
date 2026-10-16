@@ -1,11 +1,11 @@
-/* js/config.js / 定数（RE.Config） / 仕様書 v2.9.7 7章 / 版 2.9.7 */
+/* js/config.js / 定数（RE.Config） / 仕様書 v2.9.8 7章 / 版 2.9.8 */
 (function () {
   'use strict';
   window.RE = window.RE || {};
 
   RE.Config = Object.freeze({
     APP_NAME: 'KEecoloop',
-    APP_VERSION: '2.9.7',
+    APP_VERSION: '2.9.8',
     ENGINE_TYPE: 'WEB_AUDIO',
     MOVE_SEC_MIN: 1,
     MOVE_SEC_MAX: 60,
