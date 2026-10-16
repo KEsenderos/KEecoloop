@@ -1,4 +1,4 @@
-/* js/mediaSession.js / ロック画面・コントロールセンター操作（RE.MediaSession） / 仕様書 v2.9.6 5.4・9.4章 / 版 2.9.6 */
+/* js/mediaSession.js / ロック画面・コントロールセンター操作（RE.MediaSession） / 仕様書 v2.9.7 5.4・9.4章 / 版 2.9.7 */
 (function () {
   'use strict';
   var C = RE.Config;
