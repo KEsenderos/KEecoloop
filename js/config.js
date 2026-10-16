@@ -1,11 +1,11 @@
-/* js/config.js / 定数（RE.Config） / 仕様書 v2.8.2 7章 / 版 2.8.2 */
+/* js/config.js / 定数（RE.Config） / 仕様書 v2.9.3 7章 / 版 2.9.3 */
 (function () {
   'use strict';
   window.RE = window.RE || {};
 
   RE.Config = Object.freeze({
     APP_NAME: 'KEecoloop',
-    APP_VERSION: '2.8.2',
+    APP_VERSION: '2.9.3',
     ENGINE_TYPE: 'WEB_AUDIO',
     MOVE_SEC_MIN: 1,
     MOVE_SEC_MAX: 60,
@@ -36,7 +36,10 @@
     STORAGE_KEY_GAP: 're.gapSec',
     STORAGE_KEY_RESTORING: 're.restoring',
     DB_NAME: 'keecoloop-db',
-    DB_VERSION: 1,
+    DB_VERSION: 2,
+    // 区間メモ（v2.9）
+    MEMO_MAX_PER_FILE: 10,
+    MEMO_MAX_FILES: 50,
     SAVE_MAX_BYTES: 41943040,
     RESTORE_TIMEOUT_MS: 4000,
     // 説明文（画面の各所の小さい文字）。印を変えるときは PREFIX だけ直す
@@ -46,7 +49,8 @@
       MOVE_NOTE_N: '区間移動: 開始・終了を1秒戻してから、{n}秒進めます（実質＋{step}秒）',
       MOVE_NOTE_1: '区間移動: 開始・終了をそのまま1秒進めます（移動時間が1秒のときだけの決まり）',
       GAP: '区間を1回聞くごとに、この秒数の無音を入れます',
-      RATE: '声の高さはそのままで、速さだけ変えます。押すとすぐ再生（区間の合計3分まで）'
+      RATE: '声の高さはそのままで、速さだけ変えます。押すとすぐ再生（区間の合計3分まで）',
+      MEMO: '「区間保存」で今の開始・終了を最上部に残します（10件まで。10件のとき、赤字の最下部は次の保存で消えます）。タップでその区間を再生、≡を押しながら動かして並べ替え、×で削除'
     }),
     UI_REFRESH_MS: 250,
     MINUTES_MAX_DIGITS: 2,
@@ -74,7 +78,11 @@
       MARK_OTHER_SLOT: '今鳴っている側の「ここを」ボタンを押してください',
       RESTORE_FAILED: '前回のファイルを読み込めませんでした。⏏ で選んでください',
       RESTORE_SKIPPED: '前回の読み込みが途中で止まったため、自動再開をやめました。⏏ で選んでください',
-      NO_B_FILE_SELECTED: '2つ目の音声を選ぶには、2つ目の ⏏ を押してください'
+      NO_B_FILE_SELECTED: '2つ目の音声を選ぶには、2つ目の ⏏ を押してください',
+      MEMO_SAVED: '区間を保存しました',
+      MEMO_DUP: '同じ区間がすでに保存されています',
+      MEMO_REPLACED: '10件までのため、いちばん下の区間を消して保存しました',
+      MEMO_OUT_OF_RANGE: 'この区間は、このファイルの長さを超えています'
     })
   });
 })();

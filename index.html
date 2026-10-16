@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="css/style.css">
-<!-- index.html / KEecoloop 本体 / 仕様書 v2.8.2 4章 -->
+<!-- index.html / KEecoloop 本体 / 仕様書 v2.9.3 4章 -->
 </head>
 <body>
 <main class="app">
@@ -84,6 +84,8 @@
           </div>
       </div>
     </div>
+    <div class="time-sep"></div>
+    <div class="memo-save-row"><button id="btn-memo-save" class="memo-save-btn" type="button" data-slot="A" aria-label="今の開始・終了を区間メモに保存">区間保存</button></div>
     <div class="time-sep"></div>
     <div id="row-end" class="time-row">
       <button id="btn-mark-end" class="mark-btn" type="button" data-slot="A" data-mark="end" aria-label="今の位置を終了にする"><span>ここを</span><span>終了</span></button>
@@ -164,6 +166,8 @@
           </div>
       </div>
     </div>
+    <div class="time-sep"></div>
+    <div class="memo-save-row"><button id="b-btn-memo-save" class="memo-save-btn" type="button" data-slot="B" aria-label="今の開始・終了を区間メモに保存">区間保存</button></div>
     <div class="time-sep"></div>
     <div id="b-row-end" class="time-row">
       <button id="b-btn-mark-end" class="mark-btn" type="button" data-slot="B" data-mark="end" aria-label="今の位置を終了にする"><span>ここを</span><span>終了</span></button>
@@ -264,6 +268,21 @@
       <button id="btn-rate-10" class="rate-btn" type="button" data-rate="1.0">1.0</button>
       <button id="btn-rate-09" class="rate-btn" type="button" data-rate="0.9">0.9</button>
       <button id="btn-rate-08" class="rate-btn" type="button" data-rate="0.8">0.8</button>
+    </div>
+  </section>
+
+  <section class="card card-memo">
+    <div class="memo-head">区間メモ</div>
+    <div id="txt-hint-memo" class="hint"></div>
+    <div class="memo-group">
+      <div id="memo-title-a" class="memo-title" hidden>1つ目のファイル</div>
+      <div id="memo-list-a" class="memo-list"></div>
+      <div id="txt-memo-empty-a" class="memo-empty">保存した区間はまだありません</div>
+    </div>
+    <div id="group-memo-b" class="memo-group" hidden>
+      <div id="memo-title-b" class="memo-title">2つ目のファイル</div>
+      <div id="memo-list-b" class="memo-list"></div>
+      <div id="txt-memo-empty-b" class="memo-empty">保存した区間はまだありません</div>
     </div>
   </section>
 

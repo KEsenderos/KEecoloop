@@ -1,4 +1,4 @@
-/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v2.8.2 4章・9.5章 / 版 2.8.2 */
+/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v2.9.3 4章・9.5章 / 版 2.9.3 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -15,7 +15,9 @@
       'icon-play', 'icon-pause', 'btn-next', 'txt-next-hint', 'txt-version',
       'banner-update', 'txt-update-main', 'txt-update-note',
       'btn-all', 'btn-prev', 'txt-hint-next', 'txt-hint-gap', 'txt-hint-rate', 'btn-mode', 'input-file-b', 'slot-b', 'b-btn-eject', 'b-txt-file-label', 'b-txt-filename', 'b-txt-file-hint',
-      'b-txt-position', 'b-txt-duration', 'b-bar-track', 'b-bar-played', 'b-bar-marker', 'b-txt-bar-end'
+      'b-txt-position', 'b-txt-duration', 'b-bar-track', 'b-bar-played', 'b-bar-marker', 'b-txt-bar-end',
+      'btn-memo-save', 'b-btn-memo-save', 'txt-hint-memo', 'memo-title-a', 'memo-list-a', 'txt-memo-empty-a',
+      'group-memo-b', 'memo-title-b', 'memo-list-b', 'txt-memo-empty-b'
     ].forEach(function (id) { el[id] = $(id); });
     el.card = document.querySelector('.card');
     el.cardB = document.querySelector('#slot-b .card');
@@ -60,7 +62,7 @@
     el['btn-all'].addEventListener('click', function () { commitInput_(); h.onSelectAll(); });
     // タップした瞬間にボタンの色を変え、指を離すと戻す（iPhoneは :active だけでは確実に変わらないため）。
     // 一瞬のタップでも色の変化が見えるよう、最低 PRESS_MIN_MS は色を保つ。
-    Array.prototype.forEach.call(document.querySelectorAll('.digit-btn, .rate-btn, .gap-btn, .mark-btn, .mode-btn'), function (btn) {
+    Array.prototype.forEach.call(document.querySelectorAll('.digit-btn, .rate-btn, .gap-btn, .mark-btn, .mode-btn, .memo-save-btn'), function (btn) {
       var downAt = 0, timer = null;
       function release() {
         if (!downAt) return;
@@ -95,6 +97,11 @@
     Array.prototype.forEach.call(document.querySelectorAll('.gap-btn'), function (btn) {
       btn.addEventListener('click', function () { commitInput_(); h.onGapSelect(Number(btn.getAttribute('data-gap'))); });
     });
+    // 区間保存ボタン
+    el['btn-memo-save'].addEventListener('click', function () { commitInput_(); h.onMemoSave('A'); });
+    el['b-btn-memo-save'].addEventListener('click', function () { commitInput_(); h.onMemoSave('B'); });
+    bindMemoList_(h, el['memo-list-a']);
+    bindMemoList_(h, el['memo-list-b']);
     // 倍速ボタン（data-rate）
     Array.prototype.forEach.call(document.querySelectorAll('.rate-btn'), function (btn) {
       btn.addEventListener('click', function () { commitInput_(); h.onRateSelect(Number(btn.getAttribute('data-rate'))); });
@@ -104,6 +111,110 @@
     el['btn-move-plus'].addEventListener('click', function () { h.onMoveStep(1); });
   }
 
+  /** 区間メモ欄: タップ・削除（イベント委譲）と、「≡」のドラッグ並べ替え */
+  var drag = null;
+
+  function bindMemoList_(h, list) {
+    list.addEventListener('click', function (ev) {
+      var t = ev.target;
+      var main = t.closest ? t.closest('.memo-chip-main') : null;
+      var del = t.closest ? t.closest('.memo-chip-del') : null;
+      if (main) h.onMemoTap(main.getAttribute('data-slot'), main.getAttribute('data-id'));
+      else if (del) h.onMemoDelete(del.getAttribute('data-slot'), del.getAttribute('data-id'));
+    });
+    list.addEventListener('pointerdown', function (ev) {
+      var grip = ev.target.closest ? ev.target.closest('.memo-chip-grip') : null;
+      if (!grip || drag) return;
+      var chips = Array.prototype.slice.call(list.querySelectorAll('.memo-chip'));
+      var chip = grip.closest('.memo-chip');
+      var from = chips.indexOf(chip);
+      if (from < 0) return;
+      var step = chips.length > 1 ? chips[1].offsetTop - chips[0].offsetTop : chip.offsetHeight + 6;
+      drag = { h: h, slot: grip.getAttribute('data-slot'), list: list, chips: chips, chip: chip, from: from,
+        target: from, startY: ev.clientY, step: step, pid: ev.pointerId };
+      chip.classList.add('dragging');
+      try { grip.setPointerCapture(ev.pointerId); } catch (e) { /* 無視 */ }
+      ev.preventDefault();
+    });
+    list.addEventListener('pointermove', function (ev) {
+      if (!drag || ev.pointerId !== drag.pid) return;
+      var n = drag.chips.length;
+      var dy = U.clamp(ev.clientY - drag.startY, -drag.from * drag.step, (n - 1 - drag.from) * drag.step);
+      drag.chip.style.transform = 'translateY(' + dy + 'px)';
+      var target = U.clamp(Math.round(drag.from + dy / drag.step), 0, n - 1);
+      drag.target = target;
+      drag.chips.forEach(function (c, i) {
+        if (i === drag.from) return;
+        var shift = 0;
+        if (drag.from < target && i > drag.from && i <= target) shift = -drag.step;
+        else if (drag.from > target && i < drag.from && i >= target) shift = drag.step;
+        c.style.transform = shift ? 'translateY(' + shift + 'px)' : '';
+      });
+    });
+    function finish(commit) {
+      if (!drag) return;
+      var d = drag;
+      drag = null;
+      d.chip.classList.remove('dragging');
+      d.chips.forEach(function (c) { c.style.transform = ''; });
+      if (commit && d.target !== d.from) d.h.onMemoMove(d.slot, d.from, d.target);
+      else renderMemo_();
+    }
+    list.addEventListener('pointerup', function (ev) { if (drag && ev.pointerId === drag.pid) finish(true); });
+    list.addEventListener('pointercancel', function (ev) { if (drag && ev.pointerId === drag.pid) finish(false); });
+    list.addEventListener('lostpointercapture', function (ev) { if (drag && ev.pointerId === drag.pid) finish(false); });
+  }
+
+  /** 一覧（スロットごと）を作り直す。配列の順に上から並べる */
+  function renderMemoList_(slot) {
+    var St = RE.State, isB = slot === 'B';
+    var items = isB ? St.memosB : St.memosA;
+    var list = el[isB ? 'memo-list-b' : 'memo-list-a'];
+    var curS = isB ? St.startSecB : St.startSec, curE = isB ? St.endSecB : St.endSec;
+    var full = items.length >= C.MEMO_MAX_PER_FILE;
+    list.textContent = '';
+    items.forEach(function (m, i) {
+      var chip = document.createElement('div');
+      chip.className = 'memo-chip';
+      if (full && i === items.length - 1) chip.classList.add('memo-chip--last');
+      if (m.s === curS && m.e === curE) chip.setAttribute('aria-current', 'true');
+      var grip = document.createElement('button');
+      grip.type = 'button'; grip.className = 'memo-chip-grip';
+      grip.setAttribute('data-slot', slot); grip.setAttribute('data-index', String(i));
+      grip.setAttribute('aria-label', '並べ替え（押したまま上下に動かす）');
+      grip.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
+      var main = document.createElement('button');
+      main.type = 'button'; main.className = 'memo-chip-main';
+      main.setAttribute('data-slot', slot); main.setAttribute('data-id', m.id);
+      var t = document.createElement('span');
+      t.textContent = U.formatTime(m.s) + '〜' + U.formatTime(m.e);
+      main.appendChild(t);
+      if (full && i === items.length - 1) {
+        var w = document.createElement('span');
+        w.className = 'memo-chip-warn'; w.textContent = '次に消える';
+        main.appendChild(w);
+      }
+      var del = document.createElement('button');
+      del.type = 'button'; del.className = 'memo-chip-del';
+      del.setAttribute('data-slot', slot); del.setAttribute('data-id', m.id);
+      del.setAttribute('aria-label', 'この区間を削除');
+      del.textContent = '×';
+      chip.appendChild(grip); chip.appendChild(main); chip.appendChild(del);
+      list.appendChild(chip);
+    });
+    el[isB ? 'txt-memo-empty-b' : 'txt-memo-empty-a'].hidden = items.length > 0;
+  }
+
+  /** 区間メモ欄の表示を更新する（ドラッグ中は触らない） */
+  function renderMemo_() {
+    if (drag) return;
+    var dbl = RE.State.mode === C.MODE.DOUBLE;
+    el['memo-title-a'].hidden = !dbl;
+    el['group-memo-b'].hidden = !dbl;
+    renderMemoList_('A');
+    renderMemoList_('B');
+  }
+
   function setControlsEnabled_(enabled) {
     var St = RE.State;
     var loadedA = !!St.fileName, loadedB = !!St.fileNameB;
@@ -111,6 +222,8 @@
     Array.prototype.forEach.call(document.querySelectorAll('.mark-btn'), function (b) {
       b.disabled = b.getAttribute('data-slot') === 'B' ? !loadedB : !loadedA;
     });
+    el['btn-memo-save'].disabled = !loadedA;
+    el['b-btn-memo-save'].disabled = !loadedB;
     Array.prototype.forEach.call(document.querySelectorAll('.digit-btn'), function (b) {
       var t = b.getAttribute('data-target');
       b.disabled = (t === 'bstart' || t === 'bend') ? !loadedB : !loadedA;
@@ -143,6 +256,7 @@
     el['txt-hint-next'].textContent = H.PREFIX + H.NEXT;
     el['txt-hint-gap'].textContent = H.PREFIX + H.GAP;
     el['txt-hint-rate'].textContent = H.PREFIX + H.RATE;
+    el['txt-hint-memo'].textContent = H.PREFIX + H.MEMO;
   }
 
   function setPlayButtonLook_(isPlaying) {
@@ -242,6 +356,7 @@
     renderBar_('A');
     renderBar_('B');
     updateNextHint_();
+    renderMemo_();
   }
 
   function openFilePicker() { el['input-file'].click(); }

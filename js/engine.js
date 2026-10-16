@@ -1,4 +1,4 @@
-/* js/engine.js / 再生エンジン（RE.Engine）Web Audio方式 / 仕様書 v2.8.2 5.5・5.9・9.3章 / 版 2.8.2
+/* js/engine.js / 再生エンジン（RE.Engine）Web Audio方式 / 仕様書 v2.9.3 5.5・5.9・9.3章 / 版 2.9.3
  * 画面（DOM）にも RE.State にも触れない。状態の変化は callbacks.onStateChange で知らせるだけ。
  * スロット "A"（1つ目）と "B"（2つ目）の2つのファイルを持てる。ダブルモードでは両方の区間を交互に再生する。 */
 (function () {
@@ -396,6 +396,19 @@
     return play();
   }
 
+  /** 指定スロットの開始地点から再生（区間メモのタップで使う）。そのスロットが再生に使われない場合は playFromStart と同じ */
+  function playFromSlot(slot) {
+    slot = slot === 'B' ? 'B' : 'A';
+    if (!parts_().length || !ctx) return Promise.resolve();
+    if (parts_().indexOf(slot) < 0) return playFromStart();
+    stopToStart_();
+    pausedSlot = slot;
+    pausedPos = sec[slot].s;
+    if (state === S.PLAYING) { rebuild_(pausedSlot, pausedPos); return Promise.resolve(); }
+    state = S.PAUSED;   // play() が「保持した位置から」始めるための内部設定（画面への通知は play が行う）
+    return play();
+  }
+
   function pause() {
     if (state !== S.PLAYING) return;
     var loc = locate_();
@@ -442,6 +455,7 @@
     setMode: setMode,
     play: play,
     playFromStart: playFromStart,
+    playFromSlot: playFromSlot,
     pause: pause,
     stop: stop,
     setRate: setRate,

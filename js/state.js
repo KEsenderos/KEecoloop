@@ -1,4 +1,4 @@
-/* js/state.js / 状態変数の保管（RE.State） / 仕様書 v2.8.2 8章・9.2章 / 版 2.8.2 */
+/* js/state.js / 状態変数の保管（RE.State） / 仕様書 v2.9.3 8章・9.2章 / 版 2.9.3 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -16,6 +16,10 @@
     startSecB: 0,
     endSecB: 0,
     gapSec: C.GAP_DEFAULT,
+    fileKeyA: '',
+    fileKeyB: '',
+    memosA: [],
+    memosB: [],
     playerState: C.PLAYER_STATE.NO_FILE,
 
     /** 全変数を初期値へ（moveSecは保存値） */
@@ -30,6 +34,10 @@
       this.durationSecB = 0;
       this.startSecB = 0;
       this.endSecB = 0;
+      this.fileKeyA = '';
+      this.fileKeyB = '';
+      this.memosA = [];
+      this.memosB = [];
       this.startSec = C.START_DEFAULT_SEC;
       this.endSec = 0;
       this.playerState = C.PLAYER_STATE.NO_FILE;
@@ -59,6 +67,8 @@
       this.startSec = C.START_DEFAULT_SEC;
       this.endSec = 0;
       this.rate = C.RATE_DEFAULT;
+      this.fileKeyA = '';
+      this.memosA = [];
     },
 
     /** 2つ目だけを未選択に戻す */
@@ -67,6 +77,15 @@
       this.durationSecB = 0;
       this.startSecB = 0;
       this.endSecB = 0;
+      this.fileKeyB = '';
+      this.memosB = [];
+    },
+
+    /** そのスロットの fileKey と区間メモを設定する（fileKey が空なら区間メモも空）。配列の順＝画面の上から下 */
+    setMemos: function (slot, fileKey, items) {
+      var list = fileKey ? (items || []).slice() : [];
+      if (slot === 'B') { this.fileKeyB = fileKey || ''; this.memosB = list; }
+      else { this.fileKeyA = fileKey || ''; this.memosA = list; }
     }
   };
 })();

@@ -1,4 +1,4 @@
-/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v2.8.2 5.3・9.6章 / 版 2.8.2 */
+/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v2.9.3 5.3・9.6章 / 版 2.9.3 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -138,6 +138,34 @@
     render_();
   }
 
+  // ---- 区間メモ（v2.9）。配列の順＝画面の上から下（先頭＝最上部＝最新）----
+  function memosOf_(slot) { return slot === 'B' ? RE.State.memosB : RE.State.memosA; }
+  function keyOf_(slot) { return slot === 'B' ? RE.State.fileKeyB : RE.State.fileKeyA; }
+  function nameOf_(slot) { return slot === 'B' ? RE.State.fileNameB : RE.State.fileName; }
+
+  /** ファイルを読み込めたとき: そのファイルの区間メモを端末内から読む（1件だけ。非同期。完了を待たずに操作できる） */
+  function loadMemos_(slot, key) {
+    RE.State.setMemos(slot, key, []);
+    RE.Store.getMemos(key).then(function (items) {
+      if (keyOf_(slot) !== key) return;     // その間にファイルが変わっていたら捨てる
+      RE.State.setMemos(slot, key, items);
+      RE.UI.render();
+    });
+  }
+
+  /** 同じ音声を1つ目と2つ目の両方に読み込んでいるとき、もう一方のメモも同じ内容にする */
+  function syncMemos_(slot) {
+    var other = slot === 'B' ? 'A' : 'B';
+    var key = keyOf_(slot);
+    if (key && keyOf_(other) === key) RE.State.setMemos(other, key, memosOf_(slot));
+  }
+
+  /** 区間メモの変更を端末内へ保存し（そのファイルの1件だけ）、同じ音声のもう一方の欄にも反映する */
+  function saveMemos_(slot) {
+    RE.Store.putMemos(keyOf_(slot), nameOf_(slot), memosOf_(slot).slice());
+    syncMemos_(slot);
+  }
+
   /** 区間の記録が使えるか（0 <= s < e <= 全長） */
   function validSec_(sec, dur) {
     return !!sec && isFinite(sec.s) && isFinite(sec.e) && sec.s >= 0 && sec.e > sec.s && sec.e <= dur + 0.001;
@@ -169,6 +197,7 @@
       enforceRateLimit_();
       St.playerState = S.STOPPED;
       RE.UI.clearMessage();
+      loadMemos_(slot, U.makeFileKey(file));
       render_();
       setMetadata_();
       RE.MediaSession.register();
@@ -227,7 +256,7 @@
       restoring = true;
       setRestoreFlag_(true);
       if (dbl) { St.mode = C.MODE.DOUBLE; RE.Engine.setMode(St.mode); }
-      function wrap(rec) { return { name: rec.name, arrayBuffer: function () { return readBlob_(rec.blob); } }; }
+      function wrap(rec) { return { name: rec.name, size: rec.blob.size, arrayBuffer: function () { return readBlob_(rec.blob); } }; }
       function step(rec, slot) {
         if (userTouched || !rec || !rec.blob) return Promise.resolve(true);
         return loadInto_(wrap(rec), slot, { sec: meta[slot], noSave: true, restore: true });
@@ -413,6 +442,68 @@
       if (n === St.endSecB) return;
       RE.UI.clearMessage();
       applyEnd_(n, 'B');
+    },
+
+    /** 区間保存: 今の開始・終了を、区間メモの最上部に加える。10件を超えたら最下部の1件を消す */
+    onMemoSave: function (slot) {
+      var St = RE.State;
+      var isB = slot === 'B';
+      if (!(isB ? St.fileNameB : St.fileName) || !keyOf_(slot)) return;
+      var list = memosOf_(slot);
+      var s0 = isB ? St.startSecB : St.startSec, e0 = isB ? St.endSecB : St.endSec;
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].s === s0 && list[i].e === e0) { RE.UI.showMessage(C.MSG.MEMO_DUP); return; }
+      }
+      list.unshift({ id: U.makeMemoId(), s: s0, e: e0, savedAt: Date.now() });
+      var replaced = false;
+      while (list.length > C.MEMO_MAX_PER_FILE) { list.pop(); replaced = true; }
+      saveMemos_(slot);
+      render_();
+      RE.UI.showMessage(replaced ? C.MSG.MEMO_REPLACED : C.MSG.MEMO_SAVED);
+    },
+
+    /** 区間メモをタップ: その区間を開始・終了に反映し、その区間から再生を始める */
+    onMemoTap: function (slot, id) {
+      var St = RE.State;
+      var isB = slot === 'B';
+      if (!(isB ? St.fileNameB : St.fileName)) return;
+      var m = null, list = memosOf_(slot);
+      for (var i = 0; i < list.length; i++) { if (list[i].id === id) m = list[i]; }
+      if (!m) return;
+      var dur = isB ? St.durationSecB : St.durationSec;
+      var newStart = m.s, newEnd = Math.min(m.e, dur);
+      if (newStart >= dur - 0.001 || newEnd <= newStart) { RE.UI.showMessage(C.MSG.MEMO_OUT_OF_RANGE); return; }
+      if (isB) { St.startSecB = newStart; St.endSecB = newEnd; } else { St.startSec = newStart; St.endSec = newEnd; }
+      enforceRateLimit_();
+      pushSection_(slot);
+      RE.UI.clearMessage();
+      render_();
+      RE.Engine.playFromSlot(slot);
+    },
+
+    /** 区間メモの削除（確認なし・元に戻せない） */
+    onMemoDelete: function (slot, id) {
+      var list = memosOf_(slot);
+      for (var i = 0; i < list.length; i++) {
+        if (list[i].id === id) {
+          list.splice(i, 1);
+          saveMemos_(slot);
+          RE.UI.clearMessage();
+          render_();
+          return;
+        }
+      }
+    },
+
+    /** 区間メモの並べ替え（「≡」のドラッグ）。fromIndex の1件を toIndex の位置へ。区間・再生は変えない */
+    onMemoMove: function (slot, fromIndex, toIndex) {
+      var list = memosOf_(slot);
+      var n = list.length;
+      if (fromIndex < 0 || fromIndex >= n || toIndex < 0 || toIndex >= n || fromIndex === toIndex) return;
+      var item = list.splice(fromIndex, 1)[0];
+      list.splice(toIndex, 0, item);
+      saveMemos_(slot);
+      render_();
     },
 
     /** 倍速ボタン: その倍速で、開始地点から区間ループ再生を始める（再生ボタン不要） */

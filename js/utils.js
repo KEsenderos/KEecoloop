@@ -1,4 +1,4 @@
-/* js/utils.js / 時間の変換・計算・保存の補助（RE.Utils） / 仕様書 v2.8.2 9.1章 / 版 2.8.2 */
+/* js/utils.js / 時間の変換・計算・保存の補助（RE.Utils） / 仕様書 v2.9.3 9.1章 / 版 2.9.3 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -71,7 +71,19 @@
     try { window.localStorage.setItem(C.STORAGE_KEY_GAP, String(n)); } catch (e) { /* 何もしない */ }
   }
 
+  /** ファイルを区別する文字列（ファイル名＋バイト数） */
+  function makeFileKey(file) {
+    return String(file.name) + '|' + String(file.size || 0);
+  }
+
+  /** 区間メモの id */
+  function makeMemoId() {
+    return Date.now().toString(36) + Math.random().toString(36).slice(2, 4);
+  }
+
   RE.Utils = {
+    makeFileKey: makeFileKey,
+    makeMemoId: makeMemoId,
     loadGapSec: loadGapSec,
     saveGapSec: saveGapSec,
     pad2: pad2,

@@ -1,4 +1,4 @@
-/* js/store.js / 前回のファイルと区間の保存・読み出し（RE.Store） / 仕様書 v2.8.2 / 版 2.8.2
+/* js/store.js / 前回のファイルと区間の保存・読み出し（RE.Store） / 仕様書 v2.9.3 / 版 2.9.3
  * 端末内のデータベース（IndexedDB）に保存する。使えない・失敗した場合も、エラーにせず「保存なし」として扱う。
  * どの関数も、失敗しても reject しない（呼び出し側は結果が空でも困らない）。 */
 (function () {
@@ -16,6 +16,7 @@
           var db = req.result;
           if (!db.objectStoreNames.contains('files')) db.createObjectStore('files');
           if (!db.objectStoreNames.contains('meta')) db.createObjectStore('meta');
+          if (!db.objectStoreNames.contains('memos')) db.createObjectStore('memos', { keyPath: 'fileKey' });
         };
         req.onsuccess = function () { resolve(req.result); };
         req.onerror = function () { reject(req.error || new Error('IDB_ERROR')); };
@@ -77,10 +78,45 @@
       .then(function () { return true; }, function () { return false; });
   }
 
+  /** 区間メモを読む（その fileKey の1件だけ）。無い・失敗・時間切れは [] */
+  function getMemos(fileKey) {
+    if (!fileKey) return Promise.resolve([]);
+    var work = run_('memos', 'readonly', function (st) { return st.get(fileKey); })
+      .then(function (rec) { return rec && rec.items ? rec.items : []; });
+    var timeout = new Promise(function (resolve) { setTimeout(function () { resolve([]); }, C.RESTORE_TIMEOUT_MS); });
+    return Promise.race([work, timeout]).catch(function () { return []; });
+  }
+
+  /** 区間メモを保存する（配列の順のまま）。items が空なら記録を削除。記録するファイル数が上限を超えたら、最も古いものを消す */
+  function putMemos(fileKey, name, items) {
+    if (!fileKey) return Promise.resolve(false);
+    var step;
+    if (!items || !items.length) {
+      step = run_('memos', 'readwrite', function (st) { return st.delete(fileKey); });
+    } else {
+      step = run_('memos', 'readwrite', function (st) {
+        return st.put({ fileKey: fileKey, name: name, items: items, updatedAt: Date.now() });
+      }).then(function () {
+        return run_('memos', 'readonly', function (st) { return st.count(); });
+      }).then(function (n) {
+        if (n <= C.MEMO_MAX_FILES) return null;
+        return run_('memos', 'readonly', function (st) { return st.getAll(); }).then(function (all) {
+          all.sort(function (a, b) { return a.updatedAt - b.updatedAt; });
+          var drop = all.slice(0, all.length - C.MEMO_MAX_FILES);
+          return run_('memos', 'readwrite', function (st) {
+            drop.forEach(function (r) { st.delete(r.fileKey); });
+            return null;
+          });
+        });
+      });
+    }
+    return step.then(function () { return true; }, function () { return false; });
+  }
+
   /** 保存領域を勝手に消されにくくするお願い（できなくても問題なし） */
   function requestPersist() {
     try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(function () {}); } catch (e) { /* 無視 */ }
   }
 
-  RE.Store = { saveFile: saveFile, saveMeta: saveMeta, loadAll: loadAll, clearSlot: clearSlot, clearAll: clearAll, requestPersist: requestPersist };
+  RE.Store = { saveFile: saveFile, saveMeta: saveMeta, loadAll: loadAll, clearSlot: clearSlot, clearAll: clearAll, requestPersist: requestPersist, getMemos: getMemos, putMemos: putMemos };
 })();
