@@ -1,4 +1,4 @@
-/* css/style.css / KEecoloop 見た目 / 仕様書 v2.9.3 4章 */
+/* css/style.css / KEecoloop 見た目 / 仕様書 v2.9.4 4章 */
 :root {
   --bg: #0C1016;
   --surface: #131922;
@@ -233,10 +233,12 @@ button:disabled { cursor: default; }
 .mark-btn[data-mark="end"].pressed, .mark-btn[data-mark="end"]:active { background: var(--mark-end-pressed); }
 
 /* ---- 区間メモ（v2.9） ---- */
-.memo-save-row { display: flex; }
+/* 区間保存: 開始の段と終了の段の間（区切り線の上）に重ねる小さなボタン。高さを増やさず、元の画面の並びを変えない */
+.time-sep { position: relative; }
 .memo-save-btn {
-  width: 100%; height: 44px; border: 0; border-radius: 12px; background: var(--memo); color: var(--memo-ink);
-  font-family: var(--ui-font); font-size: 15px; font-weight: 700; cursor: pointer;
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  height: 28px; padding: 0 14px; border: 0; border-radius: 14px; background: var(--memo); color: var(--memo-ink);
+  font-family: var(--ui-font); font-size: 12px; font-weight: 700; white-space: nowrap; cursor: pointer; z-index: 1;
 }
 .memo-save-btn.pressed, .memo-save-btn:active { background: var(--memo-pressed); transition: none; }
 .memo-save-btn:disabled { opacity: 0.4; }

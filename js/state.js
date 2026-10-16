@@ -1,4 +1,4 @@
-/* js/state.js / 状態変数の保管（RE.State） / 仕様書 v2.9.3 8章・9.2章 / 版 2.9.3 */
+/* js/state.js / 状態変数の保管（RE.State） / 仕様書 v2.9.4 8章・9.2章 / 版 2.9.4 */
 (function () {
   'use strict';
   var C = RE.Config;

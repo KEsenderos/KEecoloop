@@ -1,8 +1,8 @@
-/* sw.js / サービスワーカー（アプリ本体のキャッシュ） / 仕様書 v2.9.3 9.7章
+/* sw.js / サービスワーカー（アプリ本体のキャッシュ） / 仕様書 v2.9.4 9.7章
  * CACHE_VERSION は js/config.js の APP_VERSION と同じ値にする。 */
 'use strict';
 
-var CACHE_VERSION = '2.9.3';
+var CACHE_VERSION = '2.9.4';
 var CACHE_NAME = 're-cache-' + CACHE_VERSION;
 var APP_SHELL_FILES = [
   './',
