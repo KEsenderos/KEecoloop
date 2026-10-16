@@ -1,4 +1,4 @@
-/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v2.9.4 4章・9.5章 / 版 2.9.4 */
+/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v2.9.6 4章・9.5章 / 版 2.9.6 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -210,6 +210,9 @@
     if (drag) return;
     var dbl = RE.State.mode === C.MODE.DOUBLE;
     el['memo-title-a'].hidden = !dbl;
+    el['btn-memo-save'].textContent = dbl ? '1つ目を保存' : '区間保存';
+    el['b-btn-memo-save'].hidden = !dbl;
+    el['b-btn-memo-save'].textContent = '2つ目を保存';
     el['group-memo-b'].hidden = !dbl;
     renderMemoList_('A');
     renderMemoList_('B');

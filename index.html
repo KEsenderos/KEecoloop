@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="css/style.css">
-<!-- index.html / KEecoloop 本体 / 仕様書 v2.9.4 4章 -->
+<!-- index.html / KEecoloop 本体 / 仕様書 v2.9.6 4章 -->
 </head>
 <body>
 <main class="app">
@@ -84,7 +84,7 @@
           </div>
       </div>
     </div>
-    <div class="time-sep"><button id="btn-memo-save" class="memo-save-btn" type="button" data-slot="A" aria-label="今の開始・終了を区間メモに保存">区間保存</button></div>
+    <div class="time-sep"></div>
     <div id="row-end" class="time-row">
       <button id="btn-mark-end" class="mark-btn" type="button" data-slot="A" data-mark="end" aria-label="今の位置を終了にする"><span>ここを</span><span>終了</span></button>
       <div class="digits">
@@ -164,7 +164,7 @@
           </div>
       </div>
     </div>
-    <div class="time-sep"><button id="b-btn-memo-save" class="memo-save-btn" type="button" data-slot="B" aria-label="今の開始・終了を区間メモに保存">区間保存</button></div>
+    <div class="time-sep"></div>
     <div id="b-row-end" class="time-row">
       <button id="b-btn-mark-end" class="mark-btn" type="button" data-slot="B" data-mark="end" aria-label="今の位置を終了にする"><span>ここを</span><span>終了</span></button>
       <div class="digits">
@@ -196,6 +196,10 @@
   </div>
 
   <div id="txt-message" class="message" role="status" aria-live="polite"></div>
+  <div class="memo-save-row">
+    <button id="btn-memo-save" class="memo-save-btn" type="button" data-slot="A" aria-label="今の開始・終了を区間メモに保存">区間保存</button>
+    <button id="b-btn-memo-save" class="memo-save-btn" hidden type="button" data-slot="B" aria-label="今の開始・終了を区間メモに保存">区間保存</button>
+  </div>
 
   <section class="controls">
     <button id="btn-stop" class="round-btn round-btn-sub" type="button" aria-label="停止">
