@@ -1,4 +1,4 @@
-/* js/state.js / 状態変数の保管（RE.State） / 仕様書 v2.9.8 8章・9.2章 / 版 2.9.8 */
+/* js/state.js / 状態変数の保管（RE.State） / 仕様書 v2.10.1 8章・9.2章 / 版 2.10.1 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -15,11 +15,17 @@
     durationSecB: 0,
     startSecB: 0,
     endSecB: 0,
+    fileNameC: '',
+    durationSecC: 0,
+    startSecC: 0,
+    endSecC: 0,
     gapSec: C.GAP_DEFAULT,
     fileKeyA: '',
     fileKeyB: '',
+    fileKeyC: '',
     memosA: [],
     memosB: [],
+    memosC: [],
     playerState: C.PLAYER_STATE.NO_FILE,
 
     /** 全変数を初期値へ（moveSecは保存値） */
@@ -34,10 +40,16 @@
       this.durationSecB = 0;
       this.startSecB = 0;
       this.endSecB = 0;
+      this.fileNameC = '';
+      this.durationSecC = 0;
+      this.startSecC = 0;
+      this.endSecC = 0;
       this.fileKeyA = '';
       this.fileKeyB = '';
+      this.fileKeyC = '';
       this.memosA = [];
       this.memosB = [];
+      this.memosC = [];
       this.startSec = C.START_DEFAULT_SEC;
       this.endSec = 0;
       this.playerState = C.PLAYER_STATE.NO_FILE;
@@ -58,6 +70,24 @@
       this.durationSecB = durationSec;
       this.startSecB = C.START_DEFAULT_SEC;
       this.endSecB = Math.min(C.END_DEFAULT_SEC, durationSec);
+    },
+
+    /** 3つ目のファイル情報を設定し、startSecC=0、endSecC=min(END_DEFAULT_SEC, 全長)。rate は変えない（v2.10） */
+    setFileC: function (fileName, durationSec) {
+      this.fileNameC = fileName;
+      this.durationSecC = durationSec;
+      this.startSecC = C.START_DEFAULT_SEC;
+      this.endSecC = Math.min(C.END_DEFAULT_SEC, durationSec);
+    },
+
+    /** 3つ目だけを未選択に戻す */
+    resetC: function () {
+      this.fileNameC = '';
+      this.durationSecC = 0;
+      this.startSecC = 0;
+      this.endSecC = 0;
+      this.fileKeyC = '';
+      this.memosC = [];
     },
 
     /** 1つ目だけを未選択に戻す（2つ目・モード・移動時間は残す。倍速は1.0に戻す） */
@@ -84,7 +114,8 @@
     /** そのスロットの fileKey と区間メモを設定する（fileKey が空なら区間メモも空）。配列の順＝画面の上から下 */
     setMemos: function (slot, fileKey, items) {
       var list = fileKey ? (items || []).slice() : [];
-      if (slot === 'B') { this.fileKeyB = fileKey || ''; this.memosB = list; }
+      if (slot === 'C') { this.fileKeyC = fileKey || ''; this.memosC = list; }
+      else if (slot === 'B') { this.fileKeyB = fileKey || ''; this.memosB = list; }
       else { this.fileKeyA = fileKey || ''; this.memosA = list; }
     }
   };

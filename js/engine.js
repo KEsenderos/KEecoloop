@@ -1,6 +1,6 @@
-/* js/engine.js / 再生エンジン（RE.Engine）Web Audio方式 / 仕様書 v2.9.8 5.5・5.9・9.3章 / 版 2.9.8
+/* js/engine.js / 再生エンジン（RE.Engine）Web Audio方式 / 仕様書 v2.10.1 5.5・5.9・9.3章 / 版 2.10.1
  * 画面（DOM）にも RE.State にも触れない。状態の変化は callbacks.onStateChange で知らせるだけ。
- * スロット "A"（1つ目）と "B"（2つ目）の2つのファイルを持てる。ダブルモードでは両方の区間を交互に再生する。 */
+ * スロット "A"（1つ目）・"B"（2つ目）・"C"（3つ目）のファイルを持てる。ダブル／トリプルモードでは区間を A→B→C の順に交互に再生する。 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -8,8 +8,8 @@
 
   var callbacks = { onStateChange: function () {}, onError: function () {} };
   var ctx = null;
-  var buffers = { A: null, B: null };
-  var sec = { A: { s: 0, e: 0 }, B: { s: 0, e: 0 } };   // 各スロットの区間（秒）
+  var buffers = { A: null, B: null, C: null };
+  var sec = { A: { s: 0, e: 0 }, B: { s: 0, e: 0 }, C: { s: 0, e: 0 } };   // 各スロットの区間（秒）
   var mode = C.MODE.SINGLE;
   var source = null;
   var keepAudio = null;
@@ -30,13 +30,16 @@
   function notify_() { callbacks.onStateChange(state); }
   function setState_(s) { state = s; notify_(); }
 
-  /** 再生に使うスロットの並び（シングル: Aだけ。ダブル: 読み込まれているA・B） */
+  /** 再生に使うスロットの並び（シングル: Aだけ。ダブル: A・B。トリプル: A・B・C。読み込まれているものだけ。v2.10） */
   function parts_() {
     var list = [];
     if (buffers.A) list.push('A');
-    if (mode === C.MODE.DOUBLE && buffers.B) list.push('B');
+    if (mode !== C.MODE.SINGLE && buffers.B) list.push('B');
+    if (mode === C.MODE.TRIPLE && buffers.C) list.push('C');
     return list;
   }
+
+  function normSlot_(slot) { return slot === 'B' ? 'B' : (slot === 'C' ? 'C' : 'A'); }
 
   function firstSlot_() { var p = parts_(); return p.length ? p[0] : 'A'; }
 
@@ -102,7 +105,7 @@
   function prepareCombined_(slots) {
     var total = 0, i;
     for (i = 0; i < slots.length; i++) total += Math.max(0, sec[slots[i]].e - sec[slots[i]].s);
-    if (total > C.DOUBLE_MAX_SECTION_SEC) throw tooLong_();
+    if (total > (mode === C.MODE.TRIPLE ? C.TRIPLE_MAX_SECTION_SEC : C.DOUBLE_MAX_SECTION_SEC)) throw tooLong_();
     var key = mode + '|' + rate + '|' + gap + '|' + slots.map(function (sl) { return sl + ':' + sec[sl].s + ':' + sec[sl].e; }).join(',');
     if (combined && key === combinedKey) return;
     combined = null; combinedKey = ''; combinedParts = [];
@@ -254,8 +257,8 @@
   }
 
   /** AUDIO_MONO が true のときだけモノラルにする（標準は false=ステレオのまま） */
-  function lighten_(buf) {
-    if (!C.AUDIO_MONO || buf.numberOfChannels < 2) return buf;
+  function lighten_(buf, force) {
+    if ((!C.AUDIO_MONO && !force) || buf.numberOfChannels < 2) return buf;
     var out = ctx.createBuffer(1, buf.length, buf.sampleRate);
     var o = out.getChannelData(0), n = buf.numberOfChannels, c, i;
     for (c = 0; c < n; c++) {
@@ -265,9 +268,29 @@
     return out;
   }
 
-  /** ファイルを読み込む（slot は "A" か "B"）。再生は止まる。メモリ節約のため、先に前のファイルを破棄する。失敗時はそのスロットが未選択に戻る。 */
+  /** そのスロットの音声を、全チャンネル平均のモノラルに置き換える（v2.10。元のステレオは破棄） */
+  function toMono_(slot) {
+    var b = buffers[slot];
+    if (!b || b.numberOfChannels < 2) return false;
+    buffers[slot] = lighten_(b, true);
+    combined = null; combinedKey = ''; combinedParts = [];
+    return true;
+  }
+
+  /** 3区間モードのメモリ判断（仕様 5.15.3）。展開後サイズの合計が TRIPLE_STEREO_MAX_MB を超えたら、読み込み済みを A→B→C の順にモノラルへ。変換したら true */
+  function enforceTripleMemory_() {
+    if (mode !== C.MODE.TRIPLE || C.AUDIO_MONO) return false;
+    var total = 0, slots = ['A', 'B', 'C'], i;
+    for (i = 0; i < 3; i++) { var b = buffers[slots[i]]; if (b) total += b.length * b.numberOfChannels * 4; }
+    if (total / 1000000 <= C.TRIPLE_STEREO_MAX_MB) return false;
+    var changed = false;
+    for (i = 0; i < 3; i++) { if (toMono_(slots[i])) changed = true; }
+    return changed;
+  }
+
+  /** ファイルを読み込む（slot は "A"・"B"・"C"）。再生は止まる。メモリ節約のため、先に前のファイルを破棄する。失敗時はそのスロットが未選択に戻る。 */
   function loadFile(file, slot) {
-    slot = slot === 'B' ? 'B' : 'A';
+    slot = normSlot_(slot);
     destroySource_();
     keepStop_();
     buffers[slot] = null;
@@ -287,9 +310,10 @@
       buffers[slot] = decoded;
       sec[slot] = { s: 0, e: Math.min(C.END_DEFAULT_SEC, decoded.duration) };
       if (slot === 'A') { rate = C.RATE_DEFAULT; srcRate = 1; }
+      var mono = enforceTripleMemory_();
       stopToStart_();
       setState_(S.STOPPED);
-      return { durationSec: decoded.duration };
+      return { durationSec: decoded.duration, monoApplied: mono };
     });
   }
 
@@ -297,10 +321,12 @@
   function setMode(m) {
     destroySource_();
     keepStop_();
-    mode = m === C.MODE.DOUBLE ? C.MODE.DOUBLE : C.MODE.SINGLE;
+    mode = m === C.MODE.DOUBLE ? C.MODE.DOUBLE : (m === C.MODE.TRIPLE ? C.MODE.TRIPLE : C.MODE.SINGLE);
     combined = null; combinedKey = ''; combinedParts = []; curParts = [];
+    var mono = enforceTripleMemory_();
     stopToStart_();
     setState_(parts_().length ? S.STOPPED : S.NO_FILE);
+    return { monoApplied: mono };
   }
 
   /** 再生元を作り直す。上限（TOO_LONG）を超えたら、再生を止めて onError(TOO_LONG) */
@@ -322,7 +348,7 @@
 
   /** そのスロットの区間を更新。noApply が true なら、値を覚えるだけ（続けて playFromStart を呼ぶとき用）。 */
   function setSection(startSec, endSec, slot, noApply) {
-    slot = slot === 'B' ? 'B' : 'A';
+    slot = normSlot_(slot);
     var loc = state === S.PLAYING ? locate_() : null;
     sec[slot] = { s: startSec, e: endSec };
     if (noApply) return;
@@ -398,7 +424,7 @@
 
   /** 指定スロットの開始地点から再生（区間メモのタップで使う）。そのスロットが再生に使われない場合は playFromStart と同じ */
   function playFromSlot(slot) {
-    slot = slot === 'B' ? 'B' : 'A';
+    slot = normSlot_(slot);
     if (!parts_().length || !ctx) return Promise.resolve();
     if (parts_().indexOf(slot) < 0) return playFromStart();
     stopToStart_();

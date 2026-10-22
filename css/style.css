@@ -1,4 +1,4 @@
-/* css/style.css / KEecoloop 見た目 / 仕様書 v2.9.8 4章 */
+/* css/style.css / KEecoloop 見た目 / 仕様書 v2.10.1 4章 */
 :root {
   --bg: #0C1016;
   --surface: #131922;
@@ -189,10 +189,9 @@ button:disabled { cursor: default; }
   background: var(--mode-bg); color: var(--mode); font-size: 12px; font-weight: 700; white-space: nowrap;
 }
 .mode-btn:active, .mode-btn.pressed { background: var(--mode); color: var(--mode-ink); }
-.slot-b { display: flex; flex-direction: column; gap: 14px; flex-shrink: 0; padding-top: 14px; border-top: 1px dashed var(--mode); }
-.slot-b[hidden] { display: none; }
-.slot-b .bar-marker, .slot-b .bar-played { }
-.slot-b .label-small { color: var(--mode); }
+.slot-b, .slot-c { display: flex; flex-direction: column; gap: 14px; flex-shrink: 0; padding-top: 14px; border-top: 1px dashed var(--mode); }
+.slot-b[hidden], .slot-c[hidden] { display: none; }
+.slot-b .label-small, .slot-c .label-small { color: var(--mode); }
 .file-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .file-row .filename { flex: 1; }
 .file-row .icon-btn.attention { border-color: transparent; background: var(--mode); color: var(--mode-ink); }
@@ -240,6 +239,7 @@ button:disabled { cursor: default; }
   font-family: var(--ui-font); font-size: 17px; font-weight: 700; white-space: nowrap; cursor: pointer;
 }
 .memo-save-btn[hidden] { display: none; }
+.memo-save-row.three .memo-save-btn { font-size: 16px; }
 .memo-save-btn.pressed, .memo-save-btn:active { background: var(--memo-pressed); transition: none; }
 .memo-save-btn:disabled { opacity: 0.4; }
 .card-memo { gap: 10px; }

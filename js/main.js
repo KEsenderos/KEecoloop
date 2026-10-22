@@ -1,4 +1,4 @@
-/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v2.9.8 5.3・9.6章 / 版 2.9.8 */
+/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v2.10.1 5.3・5.15・9.6章 / 版 2.10.1 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -16,15 +16,43 @@
     persist_();
   }
 
+  var SLOTS = ['A', 'B', 'C'];
+
+  /** スロットの値の読み書き（A=従来の変数、B・C=末尾に B／C が付く変数）。v2.10 */
+  function nm_(slot) { var St = RE.State; return slot === 'C' ? St.fileNameC : (slot === 'B' ? St.fileNameB : St.fileName); }
+  function du_(slot) { var St = RE.State; return slot === 'C' ? St.durationSecC : (slot === 'B' ? St.durationSecB : St.durationSec); }
+  function st_(slot) { var St = RE.State; return slot === 'C' ? St.startSecC : (slot === 'B' ? St.startSecB : St.startSec); }
+  function en_(slot) { var St = RE.State; return slot === 'C' ? St.endSecC : (slot === 'B' ? St.endSecB : St.endSec); }
+  function setSec_(slot, s, e) {
+    var St = RE.State;
+    if (slot === 'C') { St.startSecC = s; St.endSecC = e; }
+    else if (slot === 'B') { St.startSecB = s; St.endSecB = e; }
+    else { St.startSec = s; St.endSec = e; }
+  }
+  function setStart_(slot, v) { setSec_(slot, v, en_(slot)); }
+  function setEnd_(slot, v) { setSec_(slot, st_(slot), v); }
+  function resetSlot_(slot) { var St = RE.State; if (slot === 'C') St.resetC(); else if (slot === 'B') St.resetB(); else St.resetA(); }
+  function setFileOf_(slot, name, dur) { var St = RE.State; if (slot === 'C') St.setFileC(name, dur); else if (slot === 'B') St.setFileB(name, dur); else St.setFile(name, dur); }
+  /** いまのモードで再生に使うスロット（読み込まれているものだけ） */
+  function activeSlots_() {
+    var St = RE.State, list = [];
+    if (St.fileName) list.push('A');
+    if (St.mode !== C.MODE.SINGLE && St.fileNameB) list.push('B');
+    if (St.mode === C.MODE.TRIPLE && St.fileNameC) list.push('C');
+    return list;
+  }
+  function anyFile_() { var St = RE.State; return !!(St.fileName || St.fileNameB || St.fileNameC); }
+
   function persist_() {
     clearTimeout(saveTimer);
     saveTimer = setTimeout(function () {
       var St = RE.State;
-      if (busy > 0 || restoring || (!St.fileName && !St.fileNameB)) return;
+      if (busy > 0 || restoring || !anyFile_()) return;
       RE.Store.saveMeta({
         mode: St.mode,
         A: St.fileName ? { s: St.startSec, e: St.endSec } : null,
         B: St.fileNameB ? { s: St.startSecB, e: St.endSecB } : null,
+        C: St.fileNameC ? { s: St.startSecC, e: St.endSecC } : null,
         savedAt: Date.now()
       });
     }, 400);
@@ -32,7 +60,7 @@
 
   function onEngineStateChange_(state) {
     // ファイル読込中に届く状態通知は無視する（画面と State の食い違いを防ぐ）
-    if (!RE.State.fileName && !RE.State.fileNameB && state !== S.NO_FILE) return;
+    if (!anyFile_() && state !== S.NO_FILE) return;
     RE.State.playerState = state;
     render_();
     if (state === S.PLAYING) RE.MediaSession.register();
@@ -42,7 +70,7 @@
   function onEngineError_(errCode) {
     if (errCode === C.ERR.PLAY_BLOCKED) RE.UI.showMessage(C.MSG.PLAY_BLOCKED);
     else if (errCode === C.ERR.INTERRUPTED) RE.UI.showMessage(C.MSG.INTERRUPTED);
-    else if (errCode === C.ERR.TOO_LONG) RE.UI.showMessage(C.MSG.DOUBLE_TOO_LONG);
+    else if (errCode === C.ERR.TOO_LONG) RE.UI.showMessage(RE.State.mode === C.MODE.TRIPLE ? C.MSG.TRIPLE_TOO_LONG : C.MSG.DOUBLE_TOO_LONG);
   }
 
   var swReg = null;
@@ -68,22 +96,25 @@
 
   function playableState_() {
     var St = RE.State;
-    return (St.fileName || (St.mode === C.MODE.DOUBLE && St.fileNameB)) ? S.STOPPED : S.NO_FILE;
+    return (St.fileName || (St.mode !== C.MODE.SINGLE && St.fileNameB) || (St.mode === C.MODE.TRIPLE && St.fileNameC)) ? S.STOPPED : S.NO_FILE;
   }
 
   /** 現在位置の表示。再生に使っているスロットは実際の位置、もう一方は開始地点を出す */
   function refreshPosition_() {
     var St = RE.State;
-    if (document.hidden || (!St.fileName && !St.fileNameB)) return;
+    if (document.hidden || !anyFile_()) return;
     var act = RE.Engine.getActiveSlot();
     var pos = RE.Engine.getPositionSec();
-    if (St.fileName) RE.UI.updatePosition(act === 'A' ? pos : St.startSec, 'A');
-    if (St.fileNameB) RE.UI.updatePosition(act === 'B' ? pos : St.startSecB, 'B');
+    for (var i = 0; i < SLOTS.length; i++) {
+      var sl = SLOTS[i];
+      if (nm_(sl)) RE.UI.updatePosition(act === sl ? pos : st_(sl), sl);
+    }
   }
 
   function setMetadata_() {
     var St = RE.State;
-    var name = St.mode === C.MODE.DOUBLE && St.fileName && St.fileNameB ? St.fileName + ' / ' + St.fileNameB : (St.fileName || St.fileNameB);
+    var names = activeSlots_().map(nm_);
+    var name = names.length > 1 ? names.join(' / ') : (names[0] || St.fileName || St.fileNameB || St.fileNameC);
     RE.MediaSession.setMetadata(name);
   }
 
@@ -95,9 +126,8 @@
 
   /** 倍速で使う区間の長さの合計（シングル: A。ダブル: A+B） */
   function totalSectionSec_() {
-    var St = RE.State, t = 0;
-    if (St.fileName) t += St.endSec - St.startSec;
-    if (St.mode === C.MODE.DOUBLE && St.fileNameB) t += St.endSecB - St.startSecB;
+    var t = 0;
+    activeSlots_().forEach(function (sl) { t += en_(sl) - st_(sl); });
     return t;
   }
 
@@ -114,15 +144,13 @@
   }
 
   function pushSection_(slot) {
-    var St = RE.State;
-    if (slot === 'B') RE.Engine.setSection(St.startSecB, St.endSecB, 'B');
-    else RE.Engine.setSection(St.startSec, St.endSec, 'A');
+    RE.Engine.setSection(st_(slot), en_(slot), slot);
   }
 
   /** 開始地点を変える（終了地点は変えない）。slot は 'A' か 'B' */
   function applyStart_(sec, slot) {
     var St = RE.State;
-    if (slot === 'B') St.startSecB = sec; else St.startSec = sec;
+    setStart_(slot, sec);
     enforceRateLimit_();
     pushSection_(slot);
     if (St.playerState === S.PLAYING) RE.Engine.playFromStart(); else RE.Engine.stop();
@@ -132,16 +160,16 @@
   /** 終了地点を変える（開始地点・移動時間は変えない） */
   function applyEnd_(sec, slot) {
     var St = RE.State;
-    if (slot === 'B') St.endSecB = sec; else St.endSec = sec;
+    setEnd_(slot, sec);
     enforceRateLimit_();
     pushSection_(slot);
     render_();
   }
 
   // ---- 区間メモ（v2.9）。配列の順＝画面の上から下（先頭＝最上部＝最新）----
-  function memosOf_(slot) { return slot === 'B' ? RE.State.memosB : RE.State.memosA; }
-  function keyOf_(slot) { return slot === 'B' ? RE.State.fileKeyB : RE.State.fileKeyA; }
-  function nameOf_(slot) { return slot === 'B' ? RE.State.fileNameB : RE.State.fileName; }
+  function memosOf_(slot) { var St = RE.State; return slot === 'C' ? St.memosC : (slot === 'B' ? St.memosB : St.memosA); }
+  function keyOf_(slot) { var St = RE.State; return slot === 'C' ? St.fileKeyC : (slot === 'B' ? St.fileKeyB : St.fileKeyA); }
+  function nameOf_(slot) { return nm_(slot); }
 
   /** ファイルを読み込めたとき: そのファイルの区間メモを端末内から読む（1件だけ。非同期。完了を待たずに操作できる） */
   function loadMemos_(slot, key) {
@@ -155,9 +183,11 @@
 
   /** 同じ音声を1つ目と2つ目の両方に読み込んでいるとき、もう一方のメモも同じ内容にする */
   function syncMemos_(slot) {
-    var other = slot === 'B' ? 'A' : 'B';
     var key = keyOf_(slot);
-    if (key && keyOf_(other) === key) RE.State.setMemos(other, key, memosOf_(slot));
+    if (!key) return;
+    SLOTS.forEach(function (other) {
+      if (other !== slot && keyOf_(other) === key) RE.State.setMemos(other, key, memosOf_(slot));
+    });
   }
 
   /** 区間メモの変更を端末内へ保存し（そのファイルの1件だけ）、同じ音声のもう一方の欄にも反映する */
@@ -181,22 +211,20 @@
     var token = ++loadToken;
     busy++;
     RE.UI.showMessage(C.MSG.FILE_LOADING);
-    if (slot === 'B') St.resetB(); else St.resetA();
+    resetSlot_(slot);
     St.playerState = playableState_();
     RE.UI.render();
     return RE.Engine.loadFile(file, slot).then(function (r) {
       busy--;
       if (token !== loadToken) return false;
-      if (slot === 'B') St.setFileB(file.name, r.durationSec); else St.setFile(file.name, r.durationSec);
-      if (validSec_(opts.sec, r.durationSec)) {
-        if (slot === 'B') { St.startSecB = opts.sec.s; St.endSecB = opts.sec.e; }
-        else { St.startSec = opts.sec.s; St.endSec = opts.sec.e; }
-      }
+      setFileOf_(slot, file.name, r.durationSec);
+      if (validSec_(opts.sec, r.durationSec)) setSec_(slot, opts.sec.s, opts.sec.e);
+      if (r.monoApplied) RE.UI.showMessage(C.MSG.TRIPLE_MONO_NOTICE);
       if (slot === 'A') RE.Engine.setRate(St.rate);
       pushSection_(slot);
       enforceRateLimit_();
       St.playerState = S.STOPPED;
-      RE.UI.clearMessage();
+      if (!r.monoApplied) RE.UI.clearMessage();
       loadMemos_(slot, U.makeFileKey(file));
       render_();
       setMetadata_();
@@ -207,7 +235,7 @@
     }).catch(function () {
       busy--;
       if (token !== loadToken) return false;
-      if (slot === 'B') St.resetB(); else St.resetA();
+      resetSlot_(slot);
       St.playerState = playableState_();
       RE.UI.showMessage(opts.restore ? C.MSG.RESTORE_FAILED : C.MSG.FILE_ERROR);
       render_();
@@ -249,13 +277,15 @@
       return;
     }
     RE.Store.loadAll().then(function (d) {
-      if (userTouched || !d || (!d.A && !d.B)) return;
+      if (userTouched || !d || (!d.A && !d.B && !d.C)) return;
       var meta = d.meta || {};
       var St = RE.State;
-      var dbl = meta.mode === C.MODE.DOUBLE && !!d.B;
+      var tri = meta.mode === C.MODE.TRIPLE && !!d.B;
+      var dbl = (meta.mode === C.MODE.DOUBLE || tri) && !!d.B;
       restoring = true;
       setRestoreFlag_(true);
-      if (dbl) { St.mode = C.MODE.DOUBLE; RE.Engine.setMode(St.mode); }
+      if (tri) { St.mode = C.MODE.TRIPLE; RE.Engine.setMode(St.mode); }
+      else if (dbl) { St.mode = C.MODE.DOUBLE; RE.Engine.setMode(St.mode); }
       function wrap(rec) { return { name: rec.name, size: rec.blob.size, arrayBuffer: function () { return readBlob_(rec.blob); } }; }
       function step(rec, slot) {
         if (userTouched || !rec || !rec.blob) return Promise.resolve(true);
@@ -263,6 +293,8 @@
       }
       return step(d.A, 'A').then(function (okA) {
         return okA ? step(dbl ? d.B : null, 'B') : false;
+      }).then(function (okB) {
+        return okB ? step(tri ? d.C : null, 'C') : false;
       }).then(function () {
         restoring = false;
         setRestoreFlag_(false);
@@ -298,21 +330,26 @@
 
     onEjectB: function () { RE.UI.openFilePickerB(); },
 
+    onEjectC: function () { RE.UI.openFilePickerC(); },
+
     onFileSelected: function (file) { userTouched = true; loadInto_(file, 'A'); },
 
     onFileSelectedB: function (file) { userTouched = true; loadInto_(file, 'B'); },
+
+    onFileSelectedC: function (file) { userTouched = true; loadInto_(file, 'C'); },
 
     /** シングル⇔ダブルの切り替え。再生は止まる。2つ目のファイルは切り替えても残す */
     onModeToggle: function () {
       var St = RE.State;
       userTouched = true;
-      St.mode = St.mode === C.MODE.DOUBLE ? C.MODE.SINGLE : C.MODE.DOUBLE;
-      RE.Engine.setMode(St.mode);
+      St.mode = St.mode === C.MODE.SINGLE ? C.MODE.DOUBLE : (St.mode === C.MODE.DOUBLE ? C.MODE.TRIPLE : C.MODE.SINGLE);
+      var mr = RE.Engine.setMode(St.mode);
       St.playerState = playableState_();
       RE.UI.clearMessage();
+      if (mr && mr.monoApplied) RE.UI.showMessage(C.MSG.TRIPLE_MONO_NOTICE);
       enforceRateLimit_();
       render_();
-      if (St.fileName || St.fileNameB) { setMetadata_(); RE.MediaSession.setPlaybackState(St.playerState); }
+      if (anyFile_()) { setMetadata_(); RE.MediaSession.setPlaybackState(St.playerState); }
     },
 
     onPlayPause: function () {
@@ -331,12 +368,10 @@
     onSelectAll: function () {
       var St = RE.State;
       if (St.playerState === S.NO_FILE) return;
-      var useA = !!St.fileName, useB = St.mode === C.MODE.DOUBLE && !!St.fileNameB;
-      if (useA) { St.startSec = 0; St.endSec = St.durationSec; }
-      if (useB) { St.startSecB = 0; St.endSecB = St.durationSecB; }
+      var act = activeSlots_();
+      act.forEach(function (sl) { setSec_(sl, 0, du_(sl)); });
       enforceRateLimit_();
-      if (useA) pushSection_('A');
-      if (useB) pushSection_('B');
+      act.forEach(pushSection_);
       render_();
       if (St.playerState === S.PLAYING) RE.Engine.playFromStart(); else RE.Engine.stop();
     },
@@ -346,13 +381,10 @@
       var St = RE.State;
       if (St.playerState === S.NO_FILE) { RE.UI.showMessage(C.MSG.NO_FILE_SELECTED); return; }
       var step = U.calcStepSec(St.moveSec);
-      var useA = !!St.fileName, useB = St.mode === C.MODE.DOUBLE && !!St.fileNameB;
-      if ((useA && (St.endSec >= St.durationSec || St.startSec + step >= St.durationSec)) ||
-          (useB && (St.endSecB >= St.durationSecB || St.startSecB + step >= St.durationSecB))) {
-        RE.UI.showMessage(C.MSG.REACHED_END); return;
-      }
-      if (useA) { St.startSec += step; St.endSec = Math.min(St.endSec + step, St.durationSec); pushSection_('A'); }
-      if (useB) { St.startSecB += step; St.endSecB = Math.min(St.endSecB + step, St.durationSecB); pushSection_('B'); }
+      var act = activeSlots_();
+      var atEnd = act.some(function (sl) { return en_(sl) >= du_(sl) || st_(sl) + step >= du_(sl); });
+      if (atEnd) { RE.UI.showMessage(C.MSG.REACHED_END); return; }
+      act.forEach(function (sl) { setSec_(sl, st_(sl) + step, Math.min(en_(sl) + step, du_(sl))); pushSection_(sl); });
       RE.UI.clearMessage();
       render_();
       RE.Engine.playFromStart();
@@ -362,13 +394,11 @@
     onPrev: function () {
       var St = RE.State;
       if (St.playerState === S.NO_FILE) { RE.UI.showMessage(C.MSG.NO_FILE_SELECTED); return; }
-      var useA = !!St.fileName, useB = St.mode === C.MODE.DOUBLE && !!St.fileNameB;
+      var act = activeSlots_();
       var delta = U.calcStepSec(St.moveSec);
-      if (useA) delta = Math.min(delta, St.startSec);
-      if (useB) delta = Math.min(delta, St.startSecB);
+      act.forEach(function (sl) { delta = Math.min(delta, st_(sl)); });
       if (!(delta > 0)) { RE.UI.showMessage(C.MSG.REACHED_START); return; }
-      if (useA) { St.startSec -= delta; St.endSec -= delta; pushSection_('A'); }
-      if (useB) { St.startSecB -= delta; St.endSecB -= delta; pushSection_('B'); }
+      act.forEach(function (sl) { setSec_(sl, st_(sl) - delta, en_(sl) - delta); pushSection_(sl); });
       RE.UI.clearMessage();
       render_();
       RE.Engine.playFromStart();
@@ -377,12 +407,11 @@
     /** 「ここを開始／終了」: 今鳴っている位置を、そのスロットの開始／終了地点にする */
     onMark: function (slot, which) {
       var St = RE.State;
-      var isB = slot === 'B';
-      if (!(isB ? St.fileNameB : St.fileName)) return;
+      if (!nm_(slot)) return;
       if (St.playerState !== S.PLAYING && St.playerState !== S.PAUSED) { RE.UI.showMessage(C.MSG.MARK_NEED_PLAY); return; }
       if (RE.Engine.getActiveSlot() !== slot) { RE.UI.showMessage(C.MSG.MARK_OTHER_SLOT); return; }
       var pos = RE.Engine.getPositionSec();
-      var s0 = isB ? St.startSecB : St.startSec, e0 = isB ? St.endSecB : St.endSec, dur = isB ? St.durationSecB : St.durationSec;
+      var s0 = st_(slot), e0 = en_(slot), dur = du_(slot);
       RE.UI.clearMessage();
       if (which === 'start') {
         var n = U.clamp(Math.floor(pos), 0, Math.max(Math.ceil(e0) - 1, 0));
@@ -404,53 +433,38 @@
       render_();
     },
 
-    /** 開始地点の桁の ▲▼。deltaSec = ±600／±60／±10／±1。範囲の端では端の値に止める */
-    onStartStep: function (deltaSec) {
-      var St = RE.State;
-      if (!St.fileName) return;
-      var maxStart = Math.ceil(St.endSec) - 1;
-      var n = U.clamp(St.startSec + deltaSec, 0, Math.max(maxStart, 0));
-      if (n === St.startSec) return;
+    /** 開始地点の桁の ▲▼（スロット別）。deltaSec = ±600／±60／±10／±1。範囲の端では端の値に止める */
+    onStartStepSlot: function (slot, deltaSec) {
+      if (!nm_(slot)) return;
+      var maxStart = Math.ceil(en_(slot)) - 1;
+      var n = U.clamp(st_(slot) + deltaSec, 0, Math.max(maxStart, 0));
+      if (n === st_(slot)) return;
       RE.UI.clearMessage();
-      applyStart_(n, 'A');
+      applyStart_(n, slot);
     },
 
-    /** 終了地点の桁の ▲▼。開始地点・移動時間は変わらない */
-    onEndStep: function (deltaSec) {
-      var St = RE.State;
-      if (!St.fileName) return;
-      var n = U.clamp(Math.floor(St.endSec) + deltaSec, St.startSec + 1, St.durationSec);
-      if (n === St.endSec) return;
+    /** 終了地点の桁の ▲▼（スロット別）。開始地点・移動時間は変わらない */
+    onEndStepSlot: function (slot, deltaSec) {
+      if (!nm_(slot)) return;
+      var n = U.clamp(Math.floor(en_(slot)) + deltaSec, st_(slot) + 1, du_(slot));
+      if (n === en_(slot)) return;
       RE.UI.clearMessage();
-      applyEnd_(n, 'A');
+      applyEnd_(n, slot);
     },
 
-    onStartStepB: function (deltaSec) {
-      var St = RE.State;
-      if (!St.fileNameB) return;
-      var maxStart = Math.ceil(St.endSecB) - 1;
-      var n = U.clamp(St.startSecB + deltaSec, 0, Math.max(maxStart, 0));
-      if (n === St.startSecB) return;
-      RE.UI.clearMessage();
-      applyStart_(n, 'B');
-    },
-
-    onEndStepB: function (deltaSec) {
-      var St = RE.State;
-      if (!St.fileNameB) return;
-      var n = U.clamp(Math.floor(St.endSecB) + deltaSec, St.startSecB + 1, St.durationSecB);
-      if (n === St.endSecB) return;
-      RE.UI.clearMessage();
-      applyEnd_(n, 'B');
-    },
+    onStartStep: function (d) { handlers.onStartStepSlot('A', d); },
+    onEndStep: function (d) { handlers.onEndStepSlot('A', d); },
+    onStartStepB: function (d) { handlers.onStartStepSlot('B', d); },
+    onEndStepB: function (d) { handlers.onEndStepSlot('B', d); },
+    onStartStepC: function (d) { handlers.onStartStepSlot('C', d); },
+    onEndStepC: function (d) { handlers.onEndStepSlot('C', d); },
 
     /** 区間保存: 今の開始・終了を、区間メモの最上部に加える。10件を超えたら最下部の1件を消す */
     onMemoSave: function (slot) {
       var St = RE.State;
-      var isB = slot === 'B';
-      if (!(isB ? St.fileNameB : St.fileName) || !keyOf_(slot)) return;
+      if (!nm_(slot) || !keyOf_(slot)) return;
       var list = memosOf_(slot);
-      var s0 = isB ? St.startSecB : St.startSec, e0 = isB ? St.endSecB : St.endSec;
+      var s0 = st_(slot), e0 = en_(slot);
       for (var i = 0; i < list.length; i++) {
         if (list[i].s === s0 && list[i].e === e0) { RE.UI.showMessage(C.MSG.MEMO_DUP); return; }
       }
@@ -465,15 +479,14 @@
     /** 区間メモをタップ: その区間を開始・終了に反映し、その区間から再生を始める */
     onMemoTap: function (slot, id) {
       var St = RE.State;
-      var isB = slot === 'B';
-      if (!(isB ? St.fileNameB : St.fileName)) return;
+      if (!nm_(slot)) return;
       var m = null, list = memosOf_(slot);
       for (var i = 0; i < list.length; i++) { if (list[i].id === id) m = list[i]; }
       if (!m) return;
-      var dur = isB ? St.durationSecB : St.durationSec;
+      var dur = du_(slot);
       var newStart = m.s, newEnd = Math.min(m.e, dur);
       if (newStart >= dur - 0.001 || newEnd <= newStart) { RE.UI.showMessage(C.MSG.MEMO_OUT_OF_RANGE); return; }
-      if (isB) { St.startSecB = newStart; St.endSecB = newEnd; } else { St.startSec = newStart; St.endSec = newEnd; }
+      setSec_(slot, newStart, newEnd);
       enforceRateLimit_();
       pushSection_(slot);
       RE.UI.clearMessage();

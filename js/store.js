@@ -1,4 +1,4 @@
-/* js/store.js / 前回のファイルと区間の保存・読み出し（RE.Store） / 仕様書 v2.9.8 / 版 2.9.8
+/* js/store.js / 前回のファイルと区間の保存・読み出し（RE.Store） / 仕様書 v2.10.1 / 版 2.10.1
  * 端末内のデータベース（IndexedDB）に保存する。使えない・失敗した場合も、エラーにせず「保存なし」として扱う。
  * どの関数も、失敗しても reject しない（呼び出し側は結果が空でも困らない）。 */
 (function () {
@@ -40,7 +40,7 @@
     });
   }
 
-  /** ファイルを保存する（slot は "A" か "B"）。SAVE_MAX_BYTES を超える場合は保存しない。成功なら true */
+  /** ファイルを保存する（slot は "A"・"B"・"C"）。SAVE_MAX_BYTES を超える場合は保存しない。成功なら true */
   function saveFile(slot, file) {
     if (!file || file.size > C.SAVE_MAX_BYTES) return Promise.resolve(false);
     return run_('files', 'readwrite', function (st) {
@@ -59,8 +59,9 @@
     var work = Promise.all([
       run_('files', 'readonly', function (st) { return st.get('A'); }),
       run_('files', 'readonly', function (st) { return st.get('B'); }),
+      run_('files', 'readonly', function (st) { return st.get('C'); }),
       run_('meta', 'readonly', function (st) { return st.get('session'); })
-    ]).then(function (r) { return { A: r[0] || null, B: r[1] || null, meta: r[2] || null }; });
+    ]).then(function (r) { return { A: r[0] || null, B: r[1] || null, C: r[2] || null, meta: r[3] || null }; });
     var timeout = new Promise(function (resolve) { setTimeout(function () { resolve(null); }, C.RESTORE_TIMEOUT_MS); });
     return Promise.race([work, timeout]).catch(function () { return null; });
   }

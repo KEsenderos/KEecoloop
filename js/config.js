@@ -1,11 +1,11 @@
-/* js/config.js / 定数（RE.Config） / 仕様書 v2.9.8 7章 / 版 2.9.8 */
+/* js/config.js / 定数（RE.Config） / 仕様書 v2.10.1 7章 / 版 2.10.1 */
 (function () {
   'use strict';
   window.RE = window.RE || {};
 
   RE.Config = Object.freeze({
     APP_NAME: 'KEecoloop',
-    APP_VERSION: '2.9.8',
+    APP_VERSION: '2.10.1',
     ENGINE_TYPE: 'WEB_AUDIO',
     MOVE_SEC_MIN: 1,
     MOVE_SEC_MAX: 60,
@@ -23,8 +23,10 @@
     STRETCH_DECIMATE: 4,
     STRETCH_MAX_SECTION_SEC: 180,
     UPDATE_CHECK_MIN_MS: 600000,
-    MODE: Object.freeze({ SINGLE: 'SINGLE', DOUBLE: 'DOUBLE' }),
+    MODE: Object.freeze({ SINGLE: 'SINGLE', DOUBLE: 'DOUBLE', TRIPLE: 'TRIPLE' }),
     DOUBLE_MAX_SECTION_SEC: 2400,
+    TRIPLE_MAX_SECTION_SEC: 3600,   // 3区間モードの区間合計の上限（秒＝60分）
+    TRIPLE_STEREO_MAX_MB: 450,      // 3区間モードで、展開後サイズの合計がこれ以下ならステレオのまま、超えたらモノラル
     // 読み込み時の軽量化。ステレオは維持し、24kHzで展開（話し声ではほぼ差が出ない）。0にすると端末標準（最高音質・メモリ大）
     AUDIO_SAMPLE_RATE: 24000,
     AUDIO_MONO: false,
@@ -73,6 +75,8 @@
       UPDATE_AVAILABLE: '新しい版があります。ここをタップして更新',
       UPDATE_NOTE: '選んだファイルは選び直しになります',
       DOUBLE_TOO_LONG: '区間の合計が長すぎます（40分以内にしてください）',
+      TRIPLE_TOO_LONG: '区間の合計が長すぎます（60分以内にしてください）',
+      TRIPLE_MONO_NOTICE: '長いファイルのため、メモリ節約でモノラルにしました',
       REACHED_START: '最初の区間です',
       MARK_NEED_PLAY: '再生中に押してください',
       MARK_OTHER_SLOT: '今鳴っている側の「ここを」ボタンを押してください',
