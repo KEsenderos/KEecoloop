@@ -1,9 +1,9 @@
-/* js/config.js / 定数（RE.Config） / 仕様書 v3.3.0 7章 / 版 3.3.0 */
+/* js/config.js / 定数（RE.Config） / 仕様書 v3.4.1 7章 / 版 3.4.1 */
 (function () {
   'use strict';
   window.RE = window.RE || {};
 
-  /** 画面の文言（v3.3.0）。読むたびに、いまの言語の文言を返す（RE.I18n.t(prefix + 名前)）。plain は言語に関係ない値 */
+  /** 画面の文言（v3.4.1）。読むたびに、いまの言語の文言を返す（RE.I18n.t(prefix + 名前)）。plain は言語に関係ない値 */
   function tr_(prefix, names, plain) {
     var o = {}, k;
     names.forEach(function (n) {
@@ -15,7 +15,7 @@
 
   RE.Config = Object.freeze({
     APP_NAME: 'KEecoloop',
-    APP_VERSION: '3.3.0',
+    APP_VERSION: '3.4.1',
     ENGINE_TYPE: 'WEB_AUDIO',
     MOVE_SEC_MIN: 1,
     MOVE_SEC_MAX: 60,
@@ -65,7 +65,7 @@
     KEEPALIVE_SILENT_AUDIO: true,
     STORAGE_KEY_MOVE: 're.moveSec',
     // ご意見・ご要望のGoogleフォームのURL。空のままなら、設定タブのこの枠は出ない。https://docs.google.com/forms/ か https://forms.gle/ で始まるURLだけ使われる
-    FEEDBACK_URL: '',
+    FEEDBACK_URL: 'https://docs.google.com/forms/d/e/1FAIpQLScvwEqUk7b6eWNUqBnQPd0hG-bXYvCJPQ4W3GaRDO0SIw8zUA/viewform?usp=header',
     STORAGE_KEY_LANG: 're.lang',   // v3.2.0: 言語の選び（auto / ja / en / es / fil）
     PLAYER_STATE: Object.freeze({ NO_FILE: 'NO_FILE', STOPPED: 'STOPPED', PLAYING: 'PLAYING', PAUSED: 'PAUSED' }),
     ERR: Object.freeze({ DECODE: 'DECODE', PLAY_BLOCKED: 'PLAY_BLOCKED', INTERRUPTED: 'INTERRUPTED', TOO_LONG: 'TOO_LONG' }),
