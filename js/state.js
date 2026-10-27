@@ -1,4 +1,4 @@
-/* js/state.js / 状態変数の保管（RE.State） / 仕様書 v3.1.2 8章・9.2章 / 版 3.1.2 */
+/* js/state.js / 状態変数の保管（RE.State） / 仕様書 v3.1.4 8章・9.2章 / 版 3.1.4 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -73,7 +73,7 @@
       this.fileNameB = fileName;
       this.durationSecB = durationSec;
       this.startSecB = C.START_DEFAULT_SEC;
-      this.endSecB = Math.min(C.END_DEFAULT_SEC, durationSec);
+      this.endSecB = durationSec; // v3.1.4: 全範囲
     },
 
     /** 3つ目のファイル情報を設定し、startSecC=0、endSecC=min(END_DEFAULT_SEC, 全長)。rate は変えない（v2.10） */
@@ -81,7 +81,7 @@
       this.fileNameC = fileName;
       this.durationSecC = durationSec;
       this.startSecC = C.START_DEFAULT_SEC;
-      this.endSecC = Math.min(C.END_DEFAULT_SEC, durationSec);
+      this.endSecC = durationSec; // v3.1.4: 全範囲
     },
 
     /** 3つ目だけを未選択に戻す */

@@ -1,4 +1,4 @@
-/* js/engine.js / 再生エンジン（RE.Engine）Web Audio方式 / 仕様書 v3.1.2 5.5・5.9・9.3章 / 版 3.1.2
+/* js/engine.js / 再生エンジン（RE.Engine）Web Audio方式 / 仕様書 v3.1.4 5.5・5.9・9.3章 / 版 3.1.4
  * 画面（DOM）にも RE.State にも触れない。状態の変化は callbacks.onStateChange で知らせるだけ。
  * スロット "A"（1つ目）・"B"（2つ目）・"C"（3つ目）のファイルを持てる。ダブル／トリプルモードでは区間を A→B→C の順に交互に再生する。 */
 (function () {
@@ -310,7 +310,8 @@
       return lighten_(decoded);
     }).then(function (decoded) {
       buffers[slot] = decoded;
-      sec[slot] = { s: 0, e: Math.min(C.END_DEFAULT_SEC, decoded.duration) };
+      // v3.1.4: 1つ目は 0〜5秒、2つ目・3つ目は全範囲（同時再生が前提のため）
+      sec[slot] = { s: 0, e: slot === 'A' ? Math.min(C.END_DEFAULT_SEC, decoded.duration) : decoded.duration };
       if (slot === 'A') { rate = C.RATE_DEFAULT; srcRate = 1; }
       var mono = enforceTripleMemory_();
       stopToStart_();
