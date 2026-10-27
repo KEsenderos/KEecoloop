@@ -1,9 +1,9 @@
-/* js/config.js / 定数（RE.Config） / 仕様書 v3.4.1 7章 / 版 3.4.1 */
+/* js/config.js / 定数（RE.Config） / 仕様書 v3.5.0 7章 / 版 3.5.0 */
 (function () {
   'use strict';
   window.RE = window.RE || {};
 
-  /** 画面の文言（v3.4.1）。読むたびに、いまの言語の文言を返す（RE.I18n.t(prefix + 名前)）。plain は言語に関係ない値 */
+  /** 画面の文言（v3.5.0）。読むたびに、いまの言語の文言を返す（RE.I18n.t(prefix + 名前)）。plain は言語に関係ない値 */
   function tr_(prefix, names, plain) {
     var o = {}, k;
     names.forEach(function (n) {
@@ -15,7 +15,7 @@
 
   RE.Config = Object.freeze({
     APP_NAME: 'KEecoloop',
-    APP_VERSION: '3.4.1',
+    APP_VERSION: '3.5.0',
     ENGINE_TYPE: 'WEB_AUDIO',
     MOVE_SEC_MIN: 1,
     MOVE_SEC_MAX: 60,

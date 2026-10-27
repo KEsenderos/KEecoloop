@@ -1,4 +1,4 @@
-/* js/i18n.js / 画面の言語切り替え（RE.I18n） / 仕様書 v3.4.1 4.5章・9章 / 版 3.4.1 */
+/* js/i18n.js / 画面の言語切り替え（RE.I18n） / 仕様書 v3.5.0 4.5章・9章 / 版 3.5.0 */
 (function () {
   'use strict';
   var C = RE.Config;

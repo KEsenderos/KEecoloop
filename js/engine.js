@@ -1,4 +1,4 @@
-/* js/engine.js / 再生エンジン（RE.Engine）Web Audio方式 / 仕様書 v3.4.1 5.5・5.9・9.3章 / 版 3.4.1
+/* js/engine.js / 再生エンジン（RE.Engine）Web Audio方式 / 仕様書 v3.5.0 5.5・5.9・9.3章 / 版 3.5.0
  * 画面（DOM）にも RE.State にも触れない。状態の変化は callbacks.onStateChange で知らせるだけ。
  * スロット "A"（1つ目）・"B"（2つ目）・"C"（3つ目）のファイルを持てる。ダブル／トリプルモードでは区間を A→B→C の順に交互に再生する。 */
 (function () {
