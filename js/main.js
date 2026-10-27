@@ -1,4 +1,4 @@
-/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v3.1.4 4.3・5.3・5.15・9.6章 / 版 3.1.4 */
+/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v3.1.5 4.3・5.3・5.15・9.6章 / 版 3.1.5 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -486,7 +486,7 @@
       RE.UI.showMessage(replaced ? C.MSG.MEMO_REPLACED : C.MSG.MEMO_SAVED);
     },
 
-    /** 区間メモをタップ: その区間を開始・終了に反映し、その区間から再生を始める */
+    /** 区間メモをタップ: その区間を開始・終了に反映し、その区間だけを単独でくり返し再生する（v3.1.5） */
     onMemoTap: function (slot, id) {
       var St = RE.State;
       if (!nm_(slot)) return;
@@ -501,7 +501,8 @@
       pushSection_(slot);
       RE.UI.clearMessage();
       render_();
-      RE.Engine.playFromSlot(slot);
+      RE.Engine.playSolo(slot);   // v3.1.5: そのメモの区間だけを単独でくり返す（他のスロットへ移らない）
+      RE.UI.showMessage(C.MSG.MEMO_SOLO);
     },
 
     /** 区間メモの削除（確認なし・元に戻せない） */

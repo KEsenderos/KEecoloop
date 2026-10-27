@@ -1,4 +1,4 @@
-/* js/engine.js / 再生エンジン（RE.Engine）Web Audio方式 / 仕様書 v3.1.4 5.5・5.9・9.3章 / 版 3.1.4
+/* js/engine.js / 再生エンジン（RE.Engine）Web Audio方式 / 仕様書 v3.1.5 5.5・5.9・9.3章 / 版 3.1.5
  * 画面（DOM）にも RE.State にも触れない。状態の変化は callbacks.onStateChange で知らせるだけ。
  * スロット "A"（1つ目）・"B"（2つ目）・"C"（3つ目）のファイルを持てる。ダブル／トリプルモードでは区間を A→B→C の順に交互に再生する。 */
 (function () {
@@ -24,6 +24,7 @@
   var segCtx = 0;          // 再生開始時の ctx.currentTime
   var segOffset = 0;       // 「元の音声そのまま」方式: 再生開始位置（そのファイル上の秒）
   var segOffsetS = 0;      // 「つなげる」方式: combined 上の再生開始位置（秒）
+  var solo = '';           // v3.1.5: 区間メモで単独くり返し中のスロット（'' なら通常。停止・モード変更・ファイル読込で解除）
   var pausedSlot = 'A';    // 一時停止・停止中のスロット
   var pausedPos = 0;       // 一時停止・停止中の位置（そのファイル上の秒）
 
@@ -33,6 +34,7 @@
   /** 再生に使うスロットの並び（シングル: Aだけ。ダブル: A・B。トリプル: A・B・C。読み込まれているものだけ。v2.10） */
   function parts_() {
     var list = [];
+    if (solo && buffers[solo]) return [solo];   // v3.1.5: 単独くり返し
     if (buffers.A) list.push('A');
     if (mode !== C.MODE.SINGLE && buffers.B) list.push('B');
     if (mode === C.MODE.TRIPLE && buffers.C) list.push('C');
@@ -293,6 +295,7 @@
   /** ファイルを読み込む（slot は "A"・"B"・"C"）。再生は止まる。メモリ節約のため、先に前のファイルを破棄する。失敗時はそのスロットが未選択に戻る。 */
   function loadFile(file, slot) {
     slot = normSlot_(slot);
+    solo = '';
     destroySource_();
     keepStop_();
     buffers[slot] = null;
@@ -322,6 +325,7 @@
 
   /** モードを設定する。再生は止まる。状態は、有効なスロットが読み込まれていればSTOPPED、なければNO_FILE */
   function setMode(m) {
+    solo = '';
     destroySource_();
     keepStop_();
     mode = m === C.MODE.DOUBLE ? C.MODE.DOUBLE : (m === C.MODE.TRIPLE ? C.MODE.TRIPLE : C.MODE.SINGLE);
@@ -438,6 +442,21 @@
     return play();
   }
 
+  /** v3.1.5: 指定スロットの区間だけを、その開始地点から単独でくり返す（区間メモのタップで使う）。他のスロットには移らない。停止・モード変更・ファイル読込で通常に戻る */
+  function playSolo(slot) {
+    slot = normSlot_(slot);
+    if (!buffers[slot] || !ctx) return Promise.resolve();
+    solo = slot;
+    combined = null; combinedKey = ''; combinedParts = []; curParts = [];
+    pausedSlot = slot;
+    pausedPos = sec[slot].s;
+    if (state === S.PLAYING) { rebuild_(slot, pausedPos); return Promise.resolve(); }
+    state = S.PAUSED;
+    return play();
+  }
+
+  function getSolo() { return solo; }
+
   function pause() {
     if (state !== S.PLAYING) return;
     var loc = locate_();
@@ -452,6 +471,7 @@
 
   function stop() {
     if (state === S.NO_FILE) return;
+    solo = '';
     destroySource_();
     keepStop_();
     stopToStart_();
@@ -485,6 +505,8 @@
     play: play,
     playFromStart: playFromStart,
     playFromSlot: playFromSlot,
+    playSolo: playSolo,
+    getSolo: getSolo,
     pause: pause,
     stop: stop,
     setRate: setRate,

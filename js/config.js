@@ -1,11 +1,11 @@
-/* js/config.js / 定数（RE.Config） / 仕様書 v3.1.4 7章 / 版 3.1.4 */
+/* js/config.js / 定数（RE.Config） / 仕様書 v3.1.5 7章 / 版 3.1.5 */
 (function () {
   'use strict';
   window.RE = window.RE || {};
 
   RE.Config = Object.freeze({
     APP_NAME: 'KEecoloop',
-    APP_VERSION: '3.1.4',
+    APP_VERSION: '3.1.5',
     ENGINE_TYPE: 'WEB_AUDIO',
     MOVE_SEC_MIN: 1,
     MOVE_SEC_MAX: 60,
@@ -87,6 +87,7 @@
       MEMO_SAVED: '区間を保存しました',
       MEMO_DUP: '同じ区間がすでに保存されています',
       MEMO_REPLACED: '10件までのため、いちばん下の区間を消して保存しました',
+      MEMO_SOLO: 'このメモの区間だけをくり返し中です（■停止で通常に戻ります）',
       MEMO_OUT_OF_RANGE: 'この区間は、このファイルの長さを超えています'
     })
   });
