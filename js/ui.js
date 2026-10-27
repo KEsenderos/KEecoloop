@@ -1,4 +1,4 @@
-/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v3.0.0 4章・4.3章・9.5章 / 版 3.0.0 */
+/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v3.0.1 4章・4.3章・9.5章 / 版 3.0.1 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -22,7 +22,7 @@
       'btn-move-minus', 'input-move', 'btn-move-plus', 'txt-move-note', 'txt-message', 'btn-stop', 'btn-play',
       'icon-play', 'icon-pause', 'btn-next', 'txt-next-hint', 'txt-version',
       'banner-update', 'txt-update-main', 'txt-update-note',
-      'btn-all', 'btn-prev', 'txt-hint-next', 'txt-hint-gap', 'txt-hint-rate', 'btn-mode', 'input-file-b', 'input-file-c', 'pane-a', 'pane-b', 'pane-c', 'screen-play', 'screen-edit', 'screen-memo', 'screen-settings', 'tab-bar', 'dock', 'play-empty', 'btn-go-edit', 'txt-next-detail', 'seg-edit', 'seg-memo', 'group-memo-a', 'b-btn-eject', 'b-txt-file-label', 'b-txt-filename', 'b-txt-file-hint',
+      'btn-all', 'btn-prev', 'txt-hint-next', 'txt-hint-gap', 'txt-hint-rate', 'btn-mode', 'input-file-b', 'input-file-c', 'pane-a', 'pane-b', 'pane-c', 'screen-play', 'screen-edit', 'screen-memo', 'screen-settings', 'tab-bar', 'dock', 'txt-next-detail', 'seg-edit', 'seg-memo', 'group-memo-a', 'b-btn-eject', 'b-txt-file-label', 'b-txt-filename', 'b-txt-file-hint',
       'b-txt-position', 'b-txt-duration', 'b-bar-track', 'b-bar-played', 'b-bar-marker', 'b-txt-bar-end',
       'c-btn-eject', 'c-txt-file-label', 'c-txt-filename', 'c-txt-file-hint', 'c-txt-position', 'c-txt-duration', 'c-bar-track', 'c-bar-played', 'c-bar-marker', 'c-txt-bar-end',
       'c-btn-memo-save', 'group-memo-c', 'memo-title-c', 'memo-list-c', 'txt-memo-empty-c',
@@ -30,7 +30,7 @@
       'group-memo-b', 'memo-title-b', 'memo-list-b', 'txt-memo-empty-b'
     ].forEach(function (id) { el[id] = $(id); });
     ['a', 'b', 'c'].forEach(function (x) {
-      ['row', 'label', 'name', 'range', 'pos', 'bar-fill', 'bar-marker'].forEach(function (k) { el['play-' + k + '-' + x] = $('play-' + k + '-' + x); });
+      ['row', 'label', 'name', 'range', 'pos', 'bar-fill', 'bar-marker', 'eject'].forEach(function (k) { el['play-' + k + '-' + x] = $('play-' + k + '-' + x); });
       el['play-bar-' + x] = el['play-row-' + x].querySelector('.play-bar');
     });
     el.card = document.querySelector('.card');
@@ -83,7 +83,10 @@
     Array.prototype.forEach.call(document.querySelectorAll('.seg-btn'), function (t) {
       t.addEventListener('click', function () { h.onViewSlot(t.getAttribute('data-view')); });
     });
-    el['btn-go-edit'].addEventListener('click', function () { h.onTab('edit'); });
+    // 再生タブの各行の ⏏（区間タブを開かずにファイルを選べる）
+    el['play-eject-a'].addEventListener('click', function () { h.onEject(); });
+    el['play-eject-b'].addEventListener('click', function () { h.onEjectB(); });
+    el['play-eject-c'].addEventListener('click', function () { h.onEjectC(); });
     // 文字の入力欄にカーソルがある間は、操作帯とタブを隠す（キーボードと重ならないように）
     document.addEventListener('focusin', function (ev) {
       var t = ev.target;
@@ -407,15 +410,13 @@
   /** 再生タブの「今の区間の一覧」を更新する */
   function renderPlayRows_() {
     var St = RE.State, n = St.mode === C.MODE.TRIPLE ? 3 : (St.mode === C.MODE.DOUBLE ? 2 : 1);
-    var noFile = !St.fileName && !St.fileNameB && !St.fileNameC;
-    el['play-empty'].hidden = !noFile;
-    $('play-rows').hidden = noFile;
     ['A', 'B', 'C'].forEach(function (X, i) {
       var x = X.toLowerCase(), has = !!nameOf_(X), dur = durOf_(X), start = startOf_(X);
       el['play-row-' + x].hidden = i >= n;
       el['play-label-' + x].textContent = n === 1 ? '再生中のファイル' : (i + 1) + 'つ目';
       el['play-name-' + x].textContent = has ? nameOf_(X) : 'ファイル未選択';
       el['play-name-' + x].classList.toggle('empty', !has);
+      el['play-eject-' + x].classList.toggle('attention', !has);
       el['play-range-' + x].textContent = has ? U.formatTime(start) + '〜' + U.formatTime(endOf_(X)) : '--:--〜--:--';
       el['play-pos-' + x].classList.toggle('empty', !has);
       if (!has) el['play-pos-' + x].textContent = '00:00';

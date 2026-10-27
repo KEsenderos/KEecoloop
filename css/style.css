@@ -1,4 +1,4 @@
-/* css/style.css / KEecoloop 見た目 / 仕様書 v3.0.0 4章 */
+/* css/style.css / KEecoloop 見た目 / 仕様書 v3.0.1 4章 */
 :root {
   --bg: #0C1016;
   --surface: #131922;
@@ -295,10 +295,6 @@ body.kb-open .dock, body.kb-open .tab-bar { display: none; }
 .seg-btn.on { border-color: var(--mode); color: var(--mode); background: var(--mode-bg); }
 .seg-btn.dim { opacity: 0.5; }
 
-.play-empty { align-items: center; text-align: center; }
-.play-empty[hidden] { display: none; }
-.play-empty-text { font-size: 16px; font-weight: 700; }
-.go-edit { height: 48px; padding: 0 20px; border: 0; border-radius: 14px; background: var(--accent); color: var(--accent-ink); font-size: 15px; font-weight: 700; }
 .play-rows { display: flex; flex-direction: column; gap: 12px; }
 .play-row {
   position: relative; display: flex; flex-direction: column; gap: 4px; padding: 12px 14px 12px 18px;
@@ -321,3 +317,24 @@ body.kb-open .dock, body.kb-open .tab-bar { display: none; }
 .memo-title { display: none; }
 .play-rows:has(.play-row[hidden]):empty { display: none; }
 .play-rows[hidden] { display: none; }
+
+/* ---- v3.0.1: 区間タブの表示を小さく／再生タブの各行に ⏏ ---- */
+#screen-edit .slot-pane { gap: 10px; }
+#screen-edit .file { min-height: 0; gap: 4px; }
+#screen-edit .filename { font-size: 15px; -webkit-line-clamp: 1; }
+#screen-edit .file-hint { font-size: 13px; }
+#screen-edit .file-row .icon-btn { width: 40px; height: 40px; }
+#screen-edit .position { flex-direction: row; align-items: baseline; gap: 10px; }
+#screen-edit .position .label-small { font-size: 12px; }
+#screen-edit .position-time { font-size: 38px; }
+#screen-edit .position-total { font-size: 12px; }
+#screen-edit .bar { gap: 2px; }
+#screen-edit .bar-labels { font-size: 12px; }
+.play-name-row { display: flex; align-items: center; gap: 10px; }
+.play-name-row .play-name { flex: 1; min-width: 0; }
+.play-eject { width: 40px; height: 40px; flex-shrink: 0; }
+.play-eject.attention { border-color: transparent; background: var(--accent); color: var(--accent-ink); }
+.play-rows { gap: 8px; }
+.play-row { padding: 8px 12px 8px 16px; gap: 2px; }
+.play-pos { font-size: 32px; }
+.play-bar { margin-top: 2px; }
