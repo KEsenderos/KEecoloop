@@ -1,4 +1,4 @@
-/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v3.1.5 4章・4.3章・9.5章 / 版 3.1.5 */
+/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v3.1.6 4章・4.3章・9.5章 / 版 3.1.6 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -156,11 +156,32 @@
   /** 区間メモ欄: タップ・削除（イベント委譲）と、「≡」のドラッグ並べ替え */
   var drag = null;
 
+  var lpSuppress = false;
+
   function bindMemoList_(h, list) {
+    // v3.1.6: 長押しで名前を付ける（動かしたら取り消し）
+    var lp = null;
+    function lpClear() { if (lp) { clearTimeout(lp.timer); lp = null; } }
+    list.addEventListener('pointerdown', function (ev) {
+      lpSuppress = false;
+      var m = ev.target.closest ? ev.target.closest('.memo-chip-main') : null;
+      if (!m || drag) return;
+      lpClear();
+      var slot = m.getAttribute('data-slot'), id = m.getAttribute('data-id');
+      lp = { x: ev.clientX, y: ev.clientY, timer: setTimeout(function () {
+        lp = null; lpSuppress = true; h.onMemoRename(slot, id);
+      }, C.MEMO_LONGPRESS_MS) };
+    });
+    list.addEventListener('pointermove', function (ev) {
+      if (lp && (Math.abs(ev.clientX - lp.x) > 10 || Math.abs(ev.clientY - lp.y) > 10)) lpClear();
+    });
+    list.addEventListener('pointerup', lpClear);
+    list.addEventListener('pointercancel', lpClear);
     list.addEventListener('click', function (ev) {
       var t = ev.target;
       var main = t.closest ? t.closest('.memo-chip-main') : null;
       var del = t.closest ? t.closest('.memo-chip-del') : null;
+      if (lpSuppress) { lpSuppress = false; return; }   // 長押しで名前を付けたあとの「タップ」は無視する
       if (main) h.onMemoTap(main.getAttribute('data-slot'), main.getAttribute('data-id'));
       else if (del) h.onMemoDelete(del.getAttribute('data-slot'), del.getAttribute('data-id'));
     });
@@ -214,6 +235,10 @@
     var list = el['memo-list-' + sfx];
     var curS = startOf_(slot), curE = endOf_(slot);
     var full = items.length >= C.MEMO_MAX_PER_FILE;
+    // 内容が前回と同じなら作り直さない（名前のスライドがやり直しにならないように）
+    var sig = JSON.stringify([items.map(function (m) { return [m.id, m.s, m.e, m.name || '']; }), curS, curE, full]);
+    if (list.getAttribute('data-sig') === sig && list.firstChild) { slideNames_(list); return; }
+    list.setAttribute('data-sig', sig);
     list.textContent = '';
     items.forEach(function (m, i) {
       var chip = document.createElement('div');
@@ -228,14 +253,19 @@
       var main = document.createElement('button');
       main.type = 'button'; main.className = 'memo-chip-main';
       main.setAttribute('data-slot', slot); main.setAttribute('data-id', m.id);
-      var t = document.createElement('span');
-      t.textContent = U.formatTime(m.s) + '〜' + U.formatTime(m.e);
-      main.appendChild(t);
+      var nb = document.createElement('span');
+      nb.className = 'memo-chip-name';
+      if (m.name) { var ns = document.createElement('span'); ns.textContent = m.name; nb.appendChild(ns); }
+      main.appendChild(nb);
       if (full && i === items.length - 1) {
         var w = document.createElement('span');
         w.className = 'memo-chip-warn'; w.textContent = '次に消える';
         main.appendChild(w);
       }
+      var t = document.createElement('span');
+      t.className = 'memo-chip-time';
+      t.textContent = U.formatTime(m.s) + '〜' + U.formatTime(m.e);
+      main.appendChild(t);
       var del = document.createElement('button');
       del.type = 'button'; del.className = 'memo-chip-del';
       del.setAttribute('data-slot', slot); del.setAttribute('data-id', m.id);
@@ -245,6 +275,23 @@
       list.appendChild(chip);
     });
     el['txt-memo-empty-' + sfx].hidden = items.length > 0;
+    slideNames_(list);
+  }
+
+  /** v3.1.6: 名前が枠に入りきらないとき、一度だけ左へスライドして全文を見せる。画面に出ていない（幅0）ときは何もしない */
+  function slideNames_(list) {
+    var boxes = list.querySelectorAll('.memo-chip-name');
+    for (var i = 0; i < boxes.length; i++) {
+      var box = boxes[i], inner = box.firstChild;
+      if (!inner || box.getAttribute('data-slid') === '1' || box.clientWidth <= 0) continue;
+      box.setAttribute('data-slid', '1');
+      var over = inner.scrollWidth - box.clientWidth;
+      if (over > 2) {
+        inner.style.setProperty('--slide', '-' + (over + 8) + 'px');
+        inner.style.animationDuration = Math.max(1.2, over / 35) + 's';
+        inner.classList.add('slide-once');
+      }
+    }
   }
 
   /** 区間メモ欄の表示を更新する（ドラッグ中は触らない）。3つとも常に表示する */

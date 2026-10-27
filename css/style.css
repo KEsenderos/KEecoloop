@@ -1,4 +1,4 @@
-/* css/style.css / KEecoloop 見た目 / 仕様書 v3.1.5 4章 */
+/* css/style.css / KEecoloop 見た目 / 仕様書 v3.1.6 4章 */
 :root {
   --bg: #0C1016;
   --surface: #131922;
@@ -408,3 +408,22 @@ body.kb-open .dock, body.kb-open .tab-bar { display: none; }
 .memo-group .memo-chip--last .memo-chip-main { color: var(--danger); }
 .slot-pane .filename.empty, .play-row .play-name.empty, .slot-pane .position-time.empty, .slot-pane .digit-num.empty, .play-row .play-pos.empty { opacity: 0.45; }
 .slot-pane .file-row .icon-btn.attention, .play-row .play-eject.attention { background: var(--pc); color: var(--bg); border-color: transparent; }
+
+/* ---- v3.1.6: 区間メモの名前・時間の右寄せ・消去ボタン（黒地＋白ふち） ---- */
+.memo-chip-main { -webkit-touch-callout: none; -webkit-user-select: none; user-select: none; padding-right: 6px; }
+.memo-chip-name { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; font-family: var(--ui-font); font-size: 14px; }
+.memo-chip-name > span { display: inline-block; white-space: nowrap; }
+.memo-chip-name > .slide-once { animation-name: memoSlide; animation-timing-function: linear; animation-delay: 0.8s; animation-iteration-count: 1; animation-fill-mode: forwards; }
+@keyframes memoSlide { from { transform: translateX(0); } to { transform: translateX(var(--slide)); } }
+.memo-chip-time { flex: none; }
+.memo-group .memo-chip-del, .memo-chip-del {
+  width: 38px; height: 38px; align-self: center; margin: 0 5px 0 2px; flex: none; padding: 0;
+  background: #000; color: #fff; border: 2px solid #fff; border-radius: 10px; font-size: 20px; line-height: 1;
+  display: flex; align-items: center; justify-content: center;
+}
+.memo-chip-del:active { background: #222; }
+/* v3.1.6: 名前の枠を広げるため、並べ替えの取っ手・時間・消去ボタンを少し詰める */
+.memo-chip-grip { width: 36px; }
+.memo-chip-main { padding-left: 8px; gap: 4px; }
+.memo-chip-time { font-size: 14px; }
+.memo-group .memo-chip-del, .memo-chip-del { width: 34px; height: 34px; margin: 0 4px 0 1px; font-size: 18px; }

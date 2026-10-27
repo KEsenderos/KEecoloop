@@ -1,4 +1,4 @@
-/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v3.1.5 4.3・5.3・5.15・9.6章 / 版 3.1.5 */
+/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v3.1.6 4.3・5.3・5.15・9.6章 / 版 3.1.6 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -503,6 +503,20 @@
       render_();
       RE.Engine.playSolo(slot);   // v3.1.5: そのメモの区間だけを単独でくり返す（他のスロットへ移らない）
       RE.UI.showMessage(C.MSG.MEMO_SOLO);
+    },
+
+    /** 区間メモの名前を付ける・変える（v3.1.6）。長押しで呼ばれる。キャンセルなら何もしない。空欄なら名前を消す */
+    onMemoRename: function (slot, id) {
+      var list = memosOf_(slot), m = null, i;
+      for (i = 0; i < list.length; i++) { if (list[i].id === id) m = list[i]; }
+      if (!m) return;
+      var v;
+      try { v = window.prompt(C.MSG.MEMO_NAME_PROMPT, m.name || ''); } catch (e) { return; }
+      if (v === null || v === undefined) return;
+      v = Array.from(String(v).replace(/[\r\n]+/g, ' ').trim()).slice(0, C.MEMO_NAME_MAX).join('');
+      if (v) m.name = v; else delete m.name;
+      saveMemos_(slot);
+      render_();
     },
 
     /** 区間メモの削除（確認なし・元に戻せない） */

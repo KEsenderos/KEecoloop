@@ -1,11 +1,11 @@
-/* js/config.js / 定数（RE.Config） / 仕様書 v3.1.5 7章 / 版 3.1.5 */
+/* js/config.js / 定数（RE.Config） / 仕様書 v3.1.6 7章 / 版 3.1.6 */
 (function () {
   'use strict';
   window.RE = window.RE || {};
 
   RE.Config = Object.freeze({
     APP_NAME: 'KEecoloop',
-    APP_VERSION: '3.1.5',
+    APP_VERSION: '3.1.6',
     ENGINE_TYPE: 'WEB_AUDIO',
     MOVE_SEC_MIN: 1,
     MOVE_SEC_MAX: 60,
@@ -41,6 +41,8 @@
     DB_VERSION: 2,
     // 区間メモ（v2.9）
     MEMO_MAX_PER_FILE: 10,
+    MEMO_NAME_MAX: 20,          // v3.1.6: 区間メモの名前の最大文字数
+    MEMO_LONGPRESS_MS: 600,     // v3.1.6: メモを長押しして名前を付ける（ミリ秒）
     MEMO_MAX_FILES: 50,
     SAVE_MAX_BYTES: 41943040,
     RESTORE_TIMEOUT_MS: 4000,
@@ -52,7 +54,7 @@
       MOVE_NOTE_1: '区間移動: 開始・終了をそのまま1秒進めます（移動時間が1秒のときだけの決まり）',
       GAP: '区間を1回聞くごとに、この秒数の無音を入れます',
       RATE: '声の高さはそのままで、速さだけ変えます。押すとすぐ再生（区間の合計3分まで）',
-      MEMO: '「現在の区間をメモ」で今の開始・終了を最上部に残します（10件まで。10件のとき、赤字の最下部は次の保存で消えます）。タップでその区間を再生、≡を押しながら動かして並べ替え、×で削除'
+      MEMO: '「現在の区間をメモ」で今の開始・終了を最上部に残します（10件まで。10件のとき、赤字の最下部は次の保存で消えます）。タップでその区間を再生、長押しで名前を付ける、≡を押しながら動かして並べ替え、×で削除'
     }),
     LABEL: Object.freeze({ MEMO_SAVE: '現在の区間をメモ', PLAY_ON: '再生ON', PLAY_OFF: '再生ONにする' }),
     UI_REFRESH_MS: 250,
@@ -87,6 +89,7 @@
       MEMO_SAVED: '区間を保存しました',
       MEMO_DUP: '同じ区間がすでに保存されています',
       MEMO_REPLACED: '10件までのため、いちばん下の区間を消して保存しました',
+      MEMO_NAME_PROMPT: 'このメモの名前（20文字まで。空欄で名前を消します）',
       MEMO_SOLO: 'このメモの区間だけをくり返し中です（■停止で通常に戻ります）',
       MEMO_OUT_OF_RANGE: 'この区間は、このファイルの長さを超えています'
     })
