@@ -1,11 +1,11 @@
-/* js/config.js / 定数（RE.Config） / 仕様書 v3.0.1 7章 / 版 3.0.1 */
+/* js/config.js / 定数（RE.Config） / 仕様書 v3.1.0 7章 / 版 3.1.0 */
 (function () {
   'use strict';
   window.RE = window.RE || {};
 
   RE.Config = Object.freeze({
     APP_NAME: 'KEecoloop',
-    APP_VERSION: '3.0.1',
+    APP_VERSION: '3.1.0',
     ENGINE_TYPE: 'WEB_AUDIO',
     MOVE_SEC_MIN: 1,
     MOVE_SEC_MAX: 60,
@@ -52,8 +52,9 @@
       MOVE_NOTE_1: '区間移動: 開始・終了をそのまま1秒進めます（移動時間が1秒のときだけの決まり）',
       GAP: '区間を1回聞くごとに、この秒数の無音を入れます',
       RATE: '声の高さはそのままで、速さだけ変えます。押すとすぐ再生（区間の合計3分まで）',
-      MEMO: '「区間保存」で今の開始・終了を最上部に残します（10件まで。10件のとき、赤字の最下部は次の保存で消えます）。タップでその区間を再生、≡を押しながら動かして並べ替え、×で削除'
+      MEMO: '「現在の区間をメモ」で今の開始・終了を最上部に残します（10件まで。10件のとき、赤字の最下部は次の保存で消えます）。タップでその区間を再生、≡を押しながら動かして並べ替え、×で削除'
     }),
+    LABEL: Object.freeze({ MEMO_SAVE: '現在の区間をメモ', PLAY_ON: '再生ON', PLAY_OFF: '再生OFF' }),
     UI_REFRESH_MS: 250,
     MINUTES_MAX_DIGITS: 2,
     BAR_MARKER_MIN_PX: 8,

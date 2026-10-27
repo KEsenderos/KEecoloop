@@ -1,4 +1,4 @@
-/* js/state.js / 状態変数の保管（RE.State） / 仕様書 v3.0.1 8章・9.2章 / 版 3.0.1 */
+/* js/state.js / 状態変数の保管（RE.State） / 仕様書 v3.1.0 8章・9.2章 / 版 3.1.0 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -27,7 +27,6 @@
     memosB: [],
     memosC: [],
     tab: 'play',
-    viewSlot: 'A',
     tabScroll: { play: 0, edit: 0, memo: 0, settings: 0 },
     playerState: C.PLAYER_STATE.NO_FILE,
 
@@ -56,7 +55,6 @@
       this.startSec = C.START_DEFAULT_SEC;
       this.endSec = 0;
       this.tab = 'play';
-      this.viewSlot = 'A';
       this.tabScroll = { play: 0, edit: 0, memo: 0, settings: 0 };
       this.playerState = C.PLAYER_STATE.NO_FILE;
     },

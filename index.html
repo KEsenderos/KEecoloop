@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="css/style.css">
-<!-- index.html / KEecoloop 本体 / 仕様書 v3.0.1 4章 -->
+<!-- index.html / KEecoloop 本体 / 仕様書 v3.1.0 4章 -->
 </head>
 <body>
 <main class="app">
@@ -26,25 +26,22 @@
   <section id="screen-play" class="screen">
   <header class="topbar">
     <div class="brand"><span class="brand-ke">KE</span><span>ecoloop</span></div>
-    <div class="topbar-right">
-      <button id="btn-mode" class="mode-btn" type="button">2区間モード</button>
-    </div>
   </header>
   <div id="play-rows" class="play-rows">
     <div id="play-row-a" class="play-row">
-      <div class="play-head"><span id="play-label-a" class="play-label">再生中のファイル</span><span id="play-range-a" class="play-range">--:--〜--:--</span></div>
+      <div class="play-head"><span class="play-head-l"><span id="play-label-a" class="play-label">1つ目</span></span><span id="play-range-a" class="play-range">--:--〜--:--</span></div>
       <div class="play-name-row"><div id="play-name-a" class="play-name empty">ファイル未選択</div><button id="play-eject-a" class="icon-btn play-eject" type="button" aria-label="1つ目のファイルを選ぶ"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 5 4 15h16z" fill="currentColor"/><rect x="4" y="17.5" width="16" height="2.5" rx="1" fill="currentColor"/></svg></button></div>
       <div id="play-pos-a" class="play-pos empty">00:00</div>
       <div class="play-bar"><div id="play-bar-fill-a" class="play-bar-fill"></div><div id="play-bar-marker-a" class="play-bar-marker"></div></div>
     </div>
-    <div id="play-row-b" class="play-row" hidden>
-      <div class="play-head"><span id="play-label-b" class="play-label">2つ目</span><span id="play-range-b" class="play-range">--:--〜--:--</span></div>
+    <div id="play-row-b" class="play-row">
+      <div class="play-head"><span class="play-head-l"><span id="play-label-b" class="play-label">2つ目</span><button id="play-toggle-b" class="play-toggle" type="button" data-slot="B" aria-pressed="false">再生OFF</button></span><span id="play-range-b" class="play-range">--:--〜--:--</span></div>
       <div class="play-name-row"><div id="play-name-b" class="play-name empty">ファイル未選択</div><button id="play-eject-b" class="icon-btn play-eject" type="button" aria-label="2つ目のファイルを選ぶ"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 5 4 15h16z" fill="currentColor"/><rect x="4" y="17.5" width="16" height="2.5" rx="1" fill="currentColor"/></svg></button></div>
       <div id="play-pos-b" class="play-pos empty">00:00</div>
       <div class="play-bar"><div id="play-bar-fill-b" class="play-bar-fill"></div><div id="play-bar-marker-b" class="play-bar-marker"></div></div>
     </div>
-    <div id="play-row-c" class="play-row" hidden>
-      <div class="play-head"><span id="play-label-c" class="play-label">3つ目</span><span id="play-range-c" class="play-range">--:--〜--:--</span></div>
+    <div id="play-row-c" class="play-row">
+      <div class="play-head"><span class="play-head-l"><span id="play-label-c" class="play-label">3つ目</span><button id="play-toggle-c" class="play-toggle" type="button" data-slot="C" aria-pressed="false">再生OFF</button></span><span id="play-range-c" class="play-range">--:--〜--:--</span></div>
       <div class="play-name-row"><div id="play-name-c" class="play-name empty">ファイル未選択</div><button id="play-eject-c" class="icon-btn play-eject" type="button" aria-label="3つ目のファイルを選ぶ"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 5 4 15h16z" fill="currentColor"/><rect x="4" y="17.5" width="16" height="2.5" rx="1" fill="currentColor"/></svg></button></div>
       <div id="play-pos-c" class="play-pos empty">00:00</div>
       <div class="play-bar"><div id="play-bar-fill-c" class="play-bar-fill"></div><div id="play-bar-marker-c" class="play-bar-marker"></div></div>
@@ -66,14 +63,9 @@
   </section>
 
   <section id="screen-edit" class="screen" hidden>
-  <div id="seg-edit" class="seg" role="group" aria-label="見るファイルの切り替え" hidden>
-    <button id="seg-edit-a" class="seg-btn" type="button" data-view="A">1つ目</button>
-    <button id="seg-edit-b" class="seg-btn" type="button" data-view="B">2つ目</button>
-    <button id="seg-edit-c" class="seg-btn" type="button" data-view="C" hidden>3つ目</button>
-  </div>
-  <div id="pane-a" class="slot-pane">
+  <div id="pane-a" class="slot-pane slot-a">
   <section class="file">
-    <div id="txt-file-label" class="label-small">ファイル</div>
+    <div id="txt-file-label" class="label-small">1つ目のファイル</div>
     <div class="file-row"><div id="txt-filename" class="filename">ファイル未選択</div><button id="btn-eject" class="icon-btn" type="button" aria-label="ファイルを選ぶ"> <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 5 4 15h16z" fill="currentColor"/><rect x="4" y="17.5" width="16" height="2.5" rx="1" fill="currentColor"/></svg> </button></div>
     <div id="txt-file-hint" class="file-hint">右の ⏏ から、保存した音声を選びます</div>
   </section>
@@ -122,7 +114,7 @@
           </div>
       </div>
     </div>
-    <div class="time-sep"></div>
+    <div class="time-sep"><button id="btn-all" class="all-btn" type="button" data-slot="A" aria-label="1つ目を全範囲にする"><span>全範囲</span></button><span class="time-sep-line"></span></div>
     <div id="row-end" class="time-row">
       <button id="btn-mark-end" class="mark-btn" type="button" data-slot="A" data-mark="end" aria-label="今の位置を終了にする"><span>ここを</span><span>終了</span></button>
       <div class="digits">
@@ -150,9 +142,9 @@
       </div>
     </div>
   </section>
-
+  <button id="btn-memo-save" class="memo-save-btn" type="button" data-slot="A" aria-label="今の開始・終了を区間メモに保存">現在の区間をメモ</button>
   </div>
-  <div id="pane-b" class="slot-pane slot-b" hidden>
+  <div id="pane-b" class="slot-pane slot-b">
   <section class="file">
     <div id="b-txt-file-label" class="label-small">2つ目のファイル</div>
     <div class="file-row"><div id="b-txt-filename" class="filename">ファイル未選択</div><button id="b-btn-eject" class="icon-btn" type="button" aria-label="2つ目のファイルを選ぶ"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 5 4 15h16z" fill="currentColor"/><rect x="4" y="17.5" width="16" height="2.5" rx="1" fill="currentColor"/></svg></button></div>
@@ -203,7 +195,7 @@
           </div>
       </div>
     </div>
-    <div class="time-sep"></div>
+    <div class="time-sep"><button id="b-btn-all" class="all-btn" type="button" data-slot="B" aria-label="2つ目を全範囲にする"><span>全範囲</span></button><span class="time-sep-line"></span></div>
     <div id="b-row-end" class="time-row">
       <button id="b-btn-mark-end" class="mark-btn" type="button" data-slot="B" data-mark="end" aria-label="今の位置を終了にする"><span>ここを</span><span>終了</span></button>
       <div class="digits">
@@ -231,8 +223,9 @@
       </div>
     </div>
   </section>
+  <button id="b-btn-memo-save" class="memo-save-btn" type="button" data-slot="B" aria-label="今の開始・終了を区間メモに保存">現在の区間をメモ</button>
   </div>
-  <div id="pane-c" class="slot-pane slot-c" hidden>
+  <div id="pane-c" class="slot-pane slot-c">
   <section class="file">
     <div id="c-txt-file-label" class="label-small">3つ目のファイル</div>
     <div class="file-row"><div id="c-txt-filename" class="filename">ファイル未選択</div><button id="c-btn-eject" class="icon-btn" type="button" aria-label="3つ目のファイルを選ぶ"><svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M12 5 4 15h16z" fill="currentColor"/><rect x="4" y="17.5" width="16" height="2.5" rx="1" fill="currentColor"/></svg></button></div>
@@ -283,7 +276,7 @@
           </div>
       </div>
     </div>
-    <div class="time-sep"></div>
+    <div class="time-sep"><button id="c-btn-all" class="all-btn" type="button" data-slot="C" aria-label="3つ目を全範囲にする"><span>全範囲</span></button><span class="time-sep-line"></span></div>
     <div id="c-row-end" class="time-row">
       <button id="c-btn-mark-end" class="mark-btn" type="button" data-slot="C" data-mark="end" aria-label="今の位置を終了にする"><span>ここを</span><span>終了</span></button>
       <div class="digits">
@@ -311,34 +304,25 @@
       </div>
     </div>
   </section>
-  </div>
-  <div class="memo-save-row">
-    <button id="btn-memo-save" class="memo-save-btn" type="button" data-slot="A" aria-label="今の開始・終了を区間メモに保存">区間保存</button>
-    <button id="b-btn-memo-save" class="memo-save-btn" hidden type="button" data-slot="B" aria-label="今の開始・終了を区間メモに保存">区間保存</button>
-    <button id="c-btn-memo-save" class="memo-save-btn" hidden type="button" data-slot="C" aria-label="今の3つ目の開始・終了を区間メモに保存">区間保存</button>
+  <button id="c-btn-memo-save" class="memo-save-btn" type="button" data-slot="C" aria-label="今の開始・終了を区間メモに保存">現在の区間をメモ</button>
   </div>
   </section>
 
   <section id="screen-memo" class="screen" hidden>
-  <div id="seg-memo" class="seg" role="group" aria-label="見るファイルの切り替え" hidden>
-    <button id="seg-memo-a" class="seg-btn" type="button" data-view="A">1つ目</button>
-    <button id="seg-memo-b" class="seg-btn" type="button" data-view="B">2つ目</button>
-    <button id="seg-memo-c" class="seg-btn" type="button" data-view="C" hidden>3つ目</button>
-  </div>
   <section class="card card-memo">
     <div class="memo-head">区間メモ</div>
     <div id="txt-hint-memo" class="hint"></div>
-    <div id="group-memo-a" class="memo-group">
-      <div id="memo-title-a" class="memo-title" hidden>1つ目のファイル</div>
+    <div id="group-memo-a" class="memo-group slot-a">
+      <div id="memo-title-a" class="memo-title">1つ目のファイル</div>
       <div id="memo-list-a" class="memo-list"></div>
       <div id="txt-memo-empty-a" class="memo-empty">保存した区間はまだありません</div>
     </div>
-    <div id="group-memo-b" class="memo-group" hidden>
+    <div id="group-memo-b" class="memo-group slot-b">
       <div id="memo-title-b" class="memo-title">2つ目のファイル</div>
       <div id="memo-list-b" class="memo-list"></div>
       <div id="txt-memo-empty-b" class="memo-empty">保存した区間はまだありません</div>
     </div>
-    <div id="group-memo-c" class="memo-group" hidden>
+    <div id="group-memo-c" class="memo-group slot-c">
       <div id="memo-title-c" class="memo-title">3つ目のファイル</div>
       <div id="memo-list-c" class="memo-list"></div>
       <div id="txt-memo-empty-c" class="memo-empty">保存した区間はまだありません</div>
@@ -349,6 +333,10 @@
   <section id="screen-settings" class="screen" hidden>
     <h1 class="screen-title">設定</h1>
   <section class="card card-move">
+    <div class="move-demo">
+      <div class="next-btn next-btn-demo" aria-hidden="true"><span class="next-main">区間移動</span><span id="txt-move-demo-hint" class="next-hint">＋4秒</span></div>
+      <div class="move-demo-text">画面の下にいつも出ているこのボタンで、進む時間を決めます</div>
+    </div>
     <div id="txt-move-note" class="hint"></div>
     <div class="interval-row">
       <label for="input-move" class="interval-label">移動時間</label>
@@ -390,10 +378,6 @@
   <button id="btn-play" class="round-btn round-btn-main" type="button" aria-label="再生">
     <svg id="icon-play" viewBox="0 0 24 24" width="34" height="34" aria-hidden="true"><path d="M8 5.2v13.6a1 1 0 0 0 1.5.86l11-6.8a1 1 0 0 0 0-1.72l-11-6.8A1 1 0 0 0 8 5.2z" fill="currentColor"/></svg>
     <svg id="icon-pause" viewBox="0 0 24 24" width="34" height="34" aria-hidden="true" style="display:none"><rect x="6" y="5" width="4.2" height="14" rx="1.4" fill="currentColor"/><rect x="13.8" y="5" width="4.2" height="14" rx="1.4" fill="currentColor"/></svg>
-  </button>
-  <button id="btn-all" class="round-btn round-btn-sub round-btn-all" type="button" aria-label="全範囲を選ぶ">
-    <svg id="icon-all" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M3 5v14M21 5v14M7.5 12h9M10.5 9l-3 3 3 3M13.5 9l3 3-3 3" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    <span id="txt-all" class="all-label">全範囲</span>
   </button>
   <button id="btn-prev" class="prev-btn" type="button" aria-label="前の区間へ戻る">
     <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M20 5.5 13 12l7 6.5zM11.5 5.5 4.5 12l7 6.5z" fill="currentColor"/></svg>

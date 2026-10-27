@@ -1,4 +1,4 @@
-/* js/engine.js / 再生エンジン（RE.Engine）Web Audio方式 / 仕様書 v3.0.1 5.5・5.9・9.3章 / 版 3.0.1
+/* js/engine.js / 再生エンジン（RE.Engine）Web Audio方式 / 仕様書 v3.1.0 5.5・5.9・9.3章 / 版 3.1.0
  * 画面（DOM）にも RE.State にも触れない。状態の変化は callbacks.onStateChange で知らせるだけ。
  * スロット "A"（1つ目）・"B"（2つ目）・"C"（3つ目）のファイルを持てる。ダブル／トリプルモードでは区間を A→B→C の順に交互に再生する。 */
 (function () {
@@ -279,8 +279,10 @@
 
   /** 3区間モードのメモリ判断（仕様 5.15.3）。展開後サイズの合計が TRIPLE_STEREO_MAX_MB を超えたら、読み込み済みを A→B→C の順にモノラルへ。変換したら true */
   function enforceTripleMemory_() {
-    if (mode !== C.MODE.TRIPLE || C.AUDIO_MONO) return false;
-    var total = 0, slots = ['A', 'B', 'C'], i;
+    if (C.AUDIO_MONO) return false;
+    var total = 0, slots = ['A', 'B', 'C'], i, n = 0;
+    for (i = 0; i < 3; i++) { if (buffers[slots[i]]) n++; }
+    if (mode !== C.MODE.TRIPLE && n < 3) return false;   // 3つとも読み込み済み、または3区間のときだけ判断する
     for (i = 0; i < 3; i++) { var b = buffers[slots[i]]; if (b) total += b.length * b.numberOfChannels * 4; }
     if (total / 1000000 <= C.TRIPLE_STEREO_MAX_MB) return false;
     var changed = false;

@@ -1,4 +1,4 @@
-/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v3.0.1 4.3・5.3・5.15・9.6章 / 版 3.0.1 */
+/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v3.1.0 4.3・5.3・5.15・9.6章 / 版 3.1.0 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -281,7 +281,7 @@
       var meta = d.meta || {};
       var St = RE.State;
       var tri = meta.mode === C.MODE.TRIPLE && !!d.B;
-      var dbl = (meta.mode === C.MODE.DOUBLE || tri) && !!d.B;
+      var dbl = (meta.mode === C.MODE.DOUBLE || tri) && !!d.B;   // 再生ON/OFFの記録（旧モードの記録をそのまま読む）
       restoring = true;
       setRestoreFlag_(true);
       if (tri) { St.mode = C.MODE.TRIPLE; RE.Engine.setMode(St.mode); }
@@ -292,9 +292,9 @@
         return loadInto_(wrap(rec), slot, { sec: meta[slot], noSave: true, restore: true });
       }
       return step(d.A, 'A').then(function (okA) {
-        return okA ? step(dbl ? d.B : null, 'B') : false;
+        return okA || !d.A ? step(d.B, 'B') : false;
       }).then(function (okB) {
-        return okB ? step(tri ? d.C : null, 'C') : false;
+        return okB ? step(d.C, 'C') : false;
       }).then(function () {
         restoring = false;
         setRestoreFlag_(false);
@@ -338,11 +338,12 @@
 
     onFileSelectedC: function (file) { userTouched = true; loadInto_(file, 'C'); },
 
-    /** シングル⇔ダブルの切り替え。再生は止まる。2つ目のファイルは切り替えても残す */
-    onModeToggle: function () {
+    /** 2つ目・3つ目の「再生ON／OFF」。ONにすると、旧2区間モード（2つ目）／旧3区間モード（3つ目：2つ目も同時にON）と同じ状態。再生は止まる */
+    onPlayToggle: function (slot) {
       var St = RE.State;
       userTouched = true;
-      St.mode = St.mode === C.MODE.SINGLE ? C.MODE.DOUBLE : (St.mode === C.MODE.DOUBLE ? C.MODE.TRIPLE : C.MODE.SINGLE);
+      if (slot === 'B') St.mode = St.mode === C.MODE.SINGLE ? C.MODE.DOUBLE : C.MODE.SINGLE;
+      else St.mode = St.mode === C.MODE.TRIPLE ? C.MODE.DOUBLE : C.MODE.TRIPLE;
       var mr = RE.Engine.setMode(St.mode);
       St.playerState = playableState_();
       RE.UI.clearMessage();
@@ -362,16 +363,6 @@
       window.scrollTo(0, St.tabScroll[name] || 0);
     },
 
-    /** 区間タブ・メモタブの「1つ目｜2つ目｜3つ目」切替。再生は止めない */
-    onViewSlot: function (slot) {
-      var St = RE.State;
-      if (['A', 'B', 'C'].indexOf(slot) < 0) return;
-      if (slot === 'B' && St.mode === C.MODE.SINGLE) return;
-      if (slot === 'C' && St.mode !== C.MODE.TRIPLE) return;
-      St.viewSlot = slot;
-      RE.UI.render();
-    },
-
     onPlayPause: function () {
       if (RE.State.playerState === S.NO_FILE) { RE.UI.showMessage(C.MSG.NO_FILE_SELECTED); return; }
       RE.UI.clearMessage();
@@ -384,16 +375,15 @@
       RE.Engine.stop();
     },
 
-    /** 全範囲選択: 読み込まれているスロット（ダブルモードならA・B）を 00:00〜ファイルの終わり にする */
-    onSelectAll: function () {
+    /** 全範囲: そのパネルの区間を 00:00〜ファイルの終わり にする（他のパネルは変えない） */
+    onSelectAll: function (slot) {
       var St = RE.State;
-      if (St.playerState === S.NO_FILE) return;
-      var act = activeSlots_();
-      act.forEach(function (sl) { setSec_(sl, 0, du_(sl)); });
+      if (!nm_(slot)) return;
+      setSec_(slot, 0, du_(slot));
       enforceRateLimit_();
-      act.forEach(pushSection_);
+      pushSection_(slot);
       render_();
-      if (St.playerState === S.PLAYING) RE.Engine.playFromStart(); else RE.Engine.stop();
+      if (St.playerState === S.PLAYING) RE.Engine.playFromStart(); else if (St.playerState !== S.NO_FILE) RE.Engine.stop();
     },
 
     /** 区間移動: 開始・終了の両方を stepSec（移動時間−1秒）だけ進め、再生する。ダブルモードでは両方の区間を同時に進める */

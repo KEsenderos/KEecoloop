@@ -1,4 +1,4 @@
-/* js/stretch.js / 倍速用の伸び縮み処理（RE.Stretch）WSOLA / 仕様書 v3.0.1 5.5・9.2b章 / 版 3.0.1
+/* js/stretch.js / 倍速用の伸び縮み処理（RE.Stretch）WSOLA / 仕様書 v3.1.0 5.5・9.2b章 / 版 3.1.0
  * 声の高さを変えずに、区間だけを rate 倍速の長さに伸び縮みさせる。画面・State・Engine には触れない。 */
 (function () {
   'use strict';

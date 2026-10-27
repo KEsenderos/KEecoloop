@@ -1,4 +1,4 @@
-/* css/style.css / KEecoloop 見た目 / 仕様書 v3.0.1 4章 */
+/* css/style.css / KEecoloop 見た目 / 仕様書 v3.1.0 4章 */
 :root {
   --bg: #0C1016;
   --surface: #131922;
@@ -25,6 +25,9 @@
   --danger: #FF4D4D;
   --tab-h: 56px;
   --dock-h: 76px;
+  --pane-a: #0F141C;
+  --pane-b: #0F1815;
+  --pane-c: #151220;
   --mode: #6AA9FF;
   --mode-bg: #14233A;
   --mode-ink: #0A1626;
@@ -314,7 +317,6 @@ body.kb-open .dock, body.kb-open .tab-bar { display: none; }
 .play-bar-marker { position: absolute; top: -3px; width: 6px; height: 12px; border-radius: 3px; background: var(--accent); left: 0; display: none; }
 .next-detail { font-size: 12px; color: var(--muted); white-space: pre-line; min-height: 18px; }
 #pane-a .file-row .icon-btn.attention { background: var(--accent); color: var(--accent-ink); }
-.memo-title { display: none; }
 .play-rows:has(.play-row[hidden]):empty { display: none; }
 .play-rows[hidden] { display: none; }
 
@@ -338,3 +340,33 @@ body.kb-open .dock, body.kb-open .tab-bar { display: none; }
 .play-row { padding: 8px 12px 8px 16px; gap: 2px; }
 .play-pos { font-size: 32px; }
 .play-bar { margin-top: 2px; }
+
+/* ---- v3.1.0: 3パネル常時表示・再生ON/OFF・パネルごとの全範囲 ---- */
+.slot-pane { padding: 10px; border-radius: 20px; }
+.slot-a, .memo-group.slot-a { background: var(--pane-a); }
+.slot-b, .memo-group.slot-b { background: var(--pane-b); }
+.slot-c, .memo-group.slot-c { background: var(--pane-c); }
+.memo-group { padding: 10px; border-radius: 14px; gap: 8px; }
+.memo-title { font-size: 12px; color: var(--sub); word-break: break-all; }
+.slot-pane .memo-save-btn { flex: none; width: 100%; }
+#screen-edit .file-row { padding-top: 14px; }
+.time-sep { display: flex; align-items: center; gap: 6px; height: auto; background: none; }
+.time-sep-line { flex: 1; height: 1px; background: var(--line-soft); }
+.all-btn {
+  width: 40px; height: 32px; flex-shrink: 0; padding: 0; border-radius: 8px; border: 1px solid var(--line);
+  background: var(--surface-2); color: var(--sub); font-size: 10px; font-weight: 700; line-height: 1;
+  display: flex; align-items: center; justify-content: center; white-space: nowrap;
+}
+.all-btn.pressed, .all-btn:active { background: #1D2531; transition: none; }
+.all-btn:disabled { opacity: 0.4; }
+.play-head-l { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.play-toggle {
+  height: 28px; padding: 0 12px; border-radius: 14px; border: 1px solid var(--line); background: transparent;
+  color: var(--muted); font-size: 12px; font-weight: 700; white-space: nowrap;
+}
+.play-toggle.on { border-color: var(--mode); background: var(--mode-bg); color: var(--mode); }
+.play-toggle.pressed, .play-toggle:active { background: var(--mode); color: var(--mode-ink); transition: none; }
+.play-row.off { opacity: 0.55; }
+.move-demo { display: flex; align-items: center; gap: 12px; }
+.next-btn-demo { flex: none; width: 150px; pointer-events: none; }
+.move-demo-text { font-size: 12px; line-height: 1.5; color: var(--sub); }
