@@ -1,4 +1,4 @@
-/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v2.10.1 4章・9.5章 / 版 2.10.1 */
+/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v3.0.0 4章・4.3章・9.5章 / 版 3.0.0 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -22,16 +22,20 @@
       'btn-move-minus', 'input-move', 'btn-move-plus', 'txt-move-note', 'txt-message', 'btn-stop', 'btn-play',
       'icon-play', 'icon-pause', 'btn-next', 'txt-next-hint', 'txt-version',
       'banner-update', 'txt-update-main', 'txt-update-note',
-      'btn-all', 'btn-prev', 'txt-hint-next', 'txt-hint-gap', 'txt-hint-rate', 'btn-mode', 'input-file-b', 'input-file-c', 'slot-b', 'slot-c', 'b-btn-eject', 'b-txt-file-label', 'b-txt-filename', 'b-txt-file-hint',
+      'btn-all', 'btn-prev', 'txt-hint-next', 'txt-hint-gap', 'txt-hint-rate', 'btn-mode', 'input-file-b', 'input-file-c', 'pane-a', 'pane-b', 'pane-c', 'screen-play', 'screen-edit', 'screen-memo', 'screen-settings', 'tab-bar', 'dock', 'play-empty', 'btn-go-edit', 'txt-next-detail', 'seg-edit', 'seg-memo', 'group-memo-a', 'b-btn-eject', 'b-txt-file-label', 'b-txt-filename', 'b-txt-file-hint',
       'b-txt-position', 'b-txt-duration', 'b-bar-track', 'b-bar-played', 'b-bar-marker', 'b-txt-bar-end',
       'c-btn-eject', 'c-txt-file-label', 'c-txt-filename', 'c-txt-file-hint', 'c-txt-position', 'c-txt-duration', 'c-bar-track', 'c-bar-played', 'c-bar-marker', 'c-txt-bar-end',
       'c-btn-memo-save', 'group-memo-c', 'memo-title-c', 'memo-list-c', 'txt-memo-empty-c',
       'btn-memo-save', 'b-btn-memo-save', 'txt-hint-memo', 'memo-title-a', 'memo-list-a', 'txt-memo-empty-a',
       'group-memo-b', 'memo-title-b', 'memo-list-b', 'txt-memo-empty-b'
     ].forEach(function (id) { el[id] = $(id); });
+    ['a', 'b', 'c'].forEach(function (x) {
+      ['row', 'label', 'name', 'range', 'pos', 'bar-fill', 'bar-marker'].forEach(function (k) { el['play-' + k + '-' + x] = $('play-' + k + '-' + x); });
+      el['play-bar-' + x] = el['play-row-' + x].querySelector('.play-bar');
+    });
     el.card = document.querySelector('.card');
-    el.cardB = document.querySelector('#slot-b .card');
-    el.cardC = document.querySelector('#slot-c .card');
+    el.cardB = document.querySelector('#pane-b .card');
+    el.cardC = document.querySelector('#pane-c .card');
     var acc = C.ACCEPT_AUDIO;
     ['input-file', 'input-file-b', 'input-file-c'].forEach(function (id) {
       if (acc) el[id].setAttribute('accept', acc); else el[id].removeAttribute('accept');
@@ -73,6 +77,19 @@
       if (f) h.onFileSelectedC(f);
     });
     el['btn-play'].addEventListener('click', function () { commitInput_(); h.onPlayPause(); });
+    Array.prototype.forEach.call(document.querySelectorAll('.tab'), function (t) {
+      t.addEventListener('click', function () { commitInput_(); h.onTab(t.getAttribute('data-tab')); });
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('.seg-btn'), function (t) {
+      t.addEventListener('click', function () { h.onViewSlot(t.getAttribute('data-view')); });
+    });
+    el['btn-go-edit'].addEventListener('click', function () { h.onTab('edit'); });
+    // 文字の入力欄にカーソルがある間は、操作帯とタブを隠す（キーボードと重ならないように）
+    document.addEventListener('focusin', function (ev) {
+      var t = ev.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA')) document.body.classList.add('kb-open');
+    });
+    document.addEventListener('focusout', function () { document.body.classList.remove('kb-open'); });
     el['btn-stop'].addEventListener('click', function () { commitInput_(); h.onStop(); });
     el['btn-next'].addEventListener('click', function () { commitInput_(); h.onNext(); });
     el['btn-prev'].addEventListener('click', function () { commitInput_(); h.onPrev(); });
@@ -231,15 +248,17 @@
     if (drag) return;
     var mode = RE.State.mode;
     var dbl = mode !== C.MODE.SINGLE, tri = mode === C.MODE.TRIPLE;
+    var v = RE.State.viewSlot;
     el['memo-title-a'].hidden = !dbl;
     el['btn-memo-save'].textContent = dbl ? '1つ目を保存' : '区間保存';
-    el['b-btn-memo-save'].hidden = !dbl;
     el['b-btn-memo-save'].textContent = '2つ目を保存';
-    el['c-btn-memo-save'].hidden = !tri;
     el['c-btn-memo-save'].textContent = '3つ目を保存';
-    el['btn-memo-save'].parentNode.classList.toggle('three', tri);
-    el['group-memo-b'].hidden = !dbl;
-    el['group-memo-c'].hidden = !tri;
+    el['btn-memo-save'].hidden = v !== 'A';
+    el['b-btn-memo-save'].hidden = !(dbl && v === 'B');
+    el['c-btn-memo-save'].hidden = !(tri && v === 'C');
+    el['group-memo-a'].hidden = v !== 'A';
+    el['group-memo-b'].hidden = !(dbl && v === 'B');
+    el['group-memo-c'].hidden = !(tri && v === 'C');
     renderMemoList_('A');
     renderMemoList_('B');
     renderMemoList_('C');
@@ -343,12 +362,68 @@
     var St = RE.State;
     var step = U.calcStepSec(St.moveSec);
     if (St.playerState !== S.NO_FILE && (St.endSec >= St.durationSec || St.startSec + step >= St.durationSec)) {
-      el['txt-next-hint'].textContent = '最後の区間です';
+      el['txt-next-hint'].textContent = '最後の区間';
+      el['txt-next-detail'].textContent = '最後の区間です';
     } else if (St.playerState === S.NO_FILE) {
       el['txt-next-hint'].textContent = '＋' + step + '秒';
+      el['txt-next-detail'].textContent = '';
     } else {
-      el['txt-next-hint'].textContent = '次は ' + U.formatTime(St.startSec + step) + '〜' + U.formatTime(Math.min(St.endSec + step, St.durationSec)) + '\n（＋' + step + '秒）';
+      el['txt-next-hint'].textContent = '＋' + step + '秒';
+      el['txt-next-detail'].textContent = '次は ' + U.formatTime(St.startSec + step) + '〜' + U.formatTime(Math.min(St.endSec + step, St.durationSec)) + '（＋' + step + '秒）';
     }
+  }
+
+  /** viewSlot の補正（SINGLE は A、DOUBLE で C なら A） */
+  function fixViewSlot_() {
+    var St = RE.State;
+    if (St.mode === C.MODE.SINGLE) St.viewSlot = 'A';
+    else if (St.mode === C.MODE.DOUBLE && St.viewSlot === 'C') St.viewSlot = 'A';
+  }
+
+  var TABS = ['play', 'edit', 'memo', 'settings'];
+
+  /** 画面（screen）の表示・タブの印・スロット切替・pane の表示 */
+  function renderTabsAndPanes_() {
+    var St = RE.State, dbl = St.mode !== C.MODE.SINGLE, tri = St.mode === C.MODE.TRIPLE;
+    TABS.forEach(function (t) {
+      el['screen-' + t].hidden = St.tab !== t;
+      var tb = $('tab-' + t);
+      if (St.tab === t) tb.setAttribute('aria-current', 'page'); else tb.removeAttribute('aria-current');
+    });
+    ['edit', 'memo'].forEach(function (k) {
+      el['seg-' + k].hidden = !dbl;
+      ['a', 'b', 'c'].forEach(function (x) {
+        var b = $('seg-' + k + '-' + x), X = x.toUpperCase();
+        if (x === 'c') b.hidden = !tri;
+        b.classList.toggle('on', St.viewSlot === X);
+        b.classList.toggle('dim', !nameOf_(X));
+      });
+    });
+    el['pane-a'].hidden = St.viewSlot !== 'A';
+    el['pane-b'].hidden = !(dbl && St.viewSlot === 'B');
+    el['pane-c'].hidden = !(tri && St.viewSlot === 'C');
+  }
+
+  /** 再生タブの「今の区間の一覧」を更新する */
+  function renderPlayRows_() {
+    var St = RE.State, n = St.mode === C.MODE.TRIPLE ? 3 : (St.mode === C.MODE.DOUBLE ? 2 : 1);
+    var noFile = !St.fileName && !St.fileNameB && !St.fileNameC;
+    el['play-empty'].hidden = !noFile;
+    $('play-rows').hidden = noFile;
+    ['A', 'B', 'C'].forEach(function (X, i) {
+      var x = X.toLowerCase(), has = !!nameOf_(X), dur = durOf_(X), start = startOf_(X);
+      el['play-row-' + x].hidden = i >= n;
+      el['play-label-' + x].textContent = n === 1 ? '再生中のファイル' : (i + 1) + 'つ目';
+      el['play-name-' + x].textContent = has ? nameOf_(X) : 'ファイル未選択';
+      el['play-name-' + x].classList.toggle('empty', !has);
+      el['play-range-' + x].textContent = has ? U.formatTime(start) + '〜' + U.formatTime(endOf_(X)) : '--:--〜--:--';
+      el['play-pos-' + x].classList.toggle('empty', !has);
+      if (!has) el['play-pos-' + x].textContent = '00:00';
+      var track = el['play-bar-' + x], marker = el['play-bar-marker-' + x], fill = el['play-bar-fill-' + x];
+      if (!(dur > 0)) { marker.style.display = 'none'; fill.style.width = '0'; return; }
+      var w = track.clientWidth || 300, left = Math.min(Math.max(0, w - 6), Math.min(1, start / dur) * w);
+      fill.style.width = left + 'px'; marker.style.left = left + 'px'; marker.style.display = 'block';
+    });
   }
 
   /** RE.Stateを読み、全表示を更新する。入力中の欄を書き換えるため、一定時間ごとには呼ばない。 */
@@ -358,8 +433,8 @@
     var noFile = St.playerState === S.NO_FILE;
     var noA = !St.fileName, noB = !St.fileNameB, noC = !St.fileNameC;
     el['btn-mode'].textContent = St.mode === C.MODE.SINGLE ? '2区間モード' : (tri ? '1区間モード' : '3区間モード');
-    el['slot-b'].hidden = !dbl;
-    el['slot-c'].hidden = !tri;
+    fixViewSlot_();
+    renderTabsAndPanes_();
     el['txt-filename'].textContent = noA ? 'ファイル未選択' : St.fileName;
     el['txt-filename'].classList.toggle('empty', noA);
     el['txt-file-label'].textContent = noA ? 'ファイル' : '再生中のファイル';
@@ -399,6 +474,7 @@
     renderBar_('A');
     renderBar_('B');
     renderBar_('C');
+    renderPlayRows_();
     updateNextHint_();
     renderMemo_();
   }
@@ -416,6 +492,10 @@
 
   function updatePosition(sec, slot) {
     el[pfOf_(slot) + 'txt-position'].textContent = U.formatTime(sec);
+    var x = slot.toLowerCase();
+    el['play-pos-' + x].textContent = U.formatTime(sec);
+    var act = RE.Engine.getState() === S.PLAYING || RE.Engine.getState() === S.PAUSED ? RE.Engine.getActiveSlot() : '';
+    el['play-row-' + x].classList.toggle('active', act === slot);
   }
 
   /** 更新のお知らせ帯を表示する（一度出したら消さない） */

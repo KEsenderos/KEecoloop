@@ -1,4 +1,4 @@
-/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v2.10.1 5.3・5.15・9.6章 / 版 2.10.1 */
+/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v3.0.0 4.3・5.3・5.15・9.6章 / 版 3.0.0 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -350,6 +350,26 @@
       enforceRateLimit_();
       render_();
       if (anyFile_()) { setMetadata_(); RE.MediaSession.setPlaybackState(St.playerState); }
+    },
+
+    /** 下のタブ（仕様 4.3.8）。再生は止めない。スクロール位置はタブごとに覚える */
+    onTab: function (name) {
+      var St = RE.State;
+      if (['play', 'edit', 'memo', 'settings'].indexOf(name) < 0 || name === St.tab) return;
+      St.tabScroll[St.tab] = window.scrollY || 0;
+      St.tab = name;
+      RE.UI.render();
+      window.scrollTo(0, St.tabScroll[name] || 0);
+    },
+
+    /** 区間タブ・メモタブの「1つ目｜2つ目｜3つ目」切替。再生は止めない */
+    onViewSlot: function (slot) {
+      var St = RE.State;
+      if (['A', 'B', 'C'].indexOf(slot) < 0) return;
+      if (slot === 'B' && St.mode === C.MODE.SINGLE) return;
+      if (slot === 'C' && St.mode !== C.MODE.TRIPLE) return;
+      St.viewSlot = slot;
+      RE.UI.render();
     },
 
     onPlayPause: function () {
