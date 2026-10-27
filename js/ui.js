@@ -1,4 +1,4 @@
-/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v3.2.0 4章・4.3章・9.5章 / 版 3.2.0 */
+/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v3.3.0 4章・4.3章・9.5章 / 版 3.3.0 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -24,7 +24,7 @@
       'btn-move-minus', 'input-move', 'btn-move-plus', 'txt-move-note', 'txt-message', 'btn-stop', 'btn-play',
       'icon-play', 'icon-pause', 'btn-next', 'txt-next-hint', 'txt-version',
       'banner-update', 'txt-update-main', 'txt-update-note',
-      'btn-all', 'b-btn-all', 'c-btn-all', 'txt-move-demo-hint', 'select-lang', 'btn-prev', 'txt-hint-next', 'txt-hint-gap', 'txt-hint-rate', 'input-file-b', 'input-file-c', 'pane-a', 'pane-b', 'pane-c', 'screen-play', 'screen-edit', 'screen-memo', 'screen-settings', 'tab-bar', 'dock', 'txt-next-detail', 'group-memo-a', 'b-btn-eject', 'b-txt-file-label', 'b-txt-filename', 'b-txt-file-hint',
+      'btn-all', 'b-btn-all', 'c-btn-all', 'txt-move-demo-hint', 'select-lang', 'card-feedback', 'link-feedback', 'btn-prev', 'txt-hint-next', 'txt-hint-gap', 'txt-hint-rate', 'input-file-b', 'input-file-c', 'pane-a', 'pane-b', 'pane-c', 'screen-play', 'screen-edit', 'screen-memo', 'screen-settings', 'tab-bar', 'dock', 'txt-next-detail', 'group-memo-a', 'b-btn-eject', 'b-txt-file-label', 'b-txt-filename', 'b-txt-file-hint',
       'b-txt-position', 'b-txt-duration', 'b-bar-track', 'b-bar-played', 'b-bar-marker', 'b-txt-bar-end',
       'c-btn-eject', 'c-txt-file-label', 'c-txt-filename', 'c-txt-file-hint', 'c-txt-position', 'c-txt-duration', 'c-bar-track', 'c-bar-played', 'c-bar-marker', 'c-txt-bar-end',
       'c-btn-memo-save', 'group-memo-c', 'memo-title-c', 'memo-list-c', 'txt-memo-empty-c',
@@ -337,8 +337,21 @@
   function refreshLanguage() {
     RE.I18n.applyDom();
     renderHints_();
+    renderFeedback_();
     if (el['select-lang']) el['select-lang'].value = RE.I18n.getPref();
     try { render(); } catch (e) { /* 起動直後で状態が未準備なら無視 */ }
+  }
+
+  /** ご意見・ご要望の枠: C.FEEDBACK_URL が Googleフォームの正しいURLのときだけ出し、リンク先を今の言語つきで設定する（v3.3.0） */
+  function renderFeedback_() {
+    var url = String(C.FEEDBACK_URL || '');
+    var ok = /^https:\/\/(docs\.google\.com\/forms\/|forms\.gle\/)[A-Za-z0-9_\-\/?=&%.]*$/.test(url);
+    el['card-feedback'].hidden = !ok;
+    if (!ok) { el['link-feedback'].setAttribute('href', '#'); return; }
+    if (url.indexOf('https://docs.google.com/') === 0 && url.indexOf('hl=') < 0) {
+      url += (url.indexOf('?') >= 0 ? '&' : '?') + 'hl=' + encodeURIComponent(RE.I18n.getLang());
+    }
+    el['link-feedback'].setAttribute('href', url);
   }
 
   /** 固定の説明文を書き込む（起動時と言語切り替え時） */

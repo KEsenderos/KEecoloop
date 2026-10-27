@@ -1,13 +1,13 @@
-/* js/i18n.js / 画面の言語切り替え（RE.I18n） / 仕様書 v3.2.0 4.5章・9章 / 版 3.2.0 */
+/* js/i18n.js / 画面の言語切り替え（RE.I18n） / 仕様書 v3.3.0 4.5章・9章 / 版 3.3.0 */
 (function () {
   'use strict';
   var C = RE.Config;
 
-  // 言語コード: ja 日本語 / en English / es Español / fil Filipino（タガログ語を含む）
-  var LANGS = ['ja', 'en', 'es', 'fil'];
-  var NATIVE = { ja: '日本語', en: 'English', es: 'Español', fil: 'Filipino (Tagalog)' };
+  // 言語コード: ja 日本語 / en English / es Español / fil Filipino（タガログ語を含む） / zh-TW 繁體中文（台灣）
+  var LANGS = ['ja', 'en', 'es', 'fil', 'zh-TW'];
+  var NATIVE = { ja: '日本語', en: 'English', es: 'Español', fil: 'Filipino (Tagalog)', 'zh-TW': '繁體中文（台灣）' };
   var DICT = {
-    ja: {
+    "ja": {
       "slot.1": "1つ目",
       "slot.2": "2つ目",
       "slot.3": "3つ目",
@@ -122,9 +122,12 @@
       "msg.MEMO_REPLACED": "10件までのため、いちばん下の区間を消して保存しました",
       "msg.MEMO_NAME_PROMPT": "このメモの名前（20文字まで。空欄で名前を消します）",
       "msg.MEMO_SOLO": "このメモの区間だけをくり返し中です（■停止で通常に戻ります）",
-      "msg.MEMO_OUT_OF_RANGE": "この区間は、このファイルの長さを超えています"
+      "msg.MEMO_OUT_OF_RANGE": "この区間は、このファイルの長さを超えています",
+      "feedback.title": "ご意見・ご要望",
+      "feedback.button": "ご意見・ご要望を送る",
+      "feedback.note": "押すとGoogleフォームが別のページで開きます。メールアドレスなどの個人情報は書かないでください。内容は開発者だけが読みます。返信はできません。"
     },
-    en: {
+    "en": {
       "slot.1": "1st",
       "slot.2": "2nd",
       "slot.3": "3rd",
@@ -239,9 +242,12 @@
       "msg.MEMO_REPLACED": "The limit is 10, so the bottom section was removed to save this one",
       "msg.MEMO_NAME_PROMPT": "Name for this memo (up to 20 characters; leave blank to remove the name)",
       "msg.MEMO_SOLO": "Repeating only this memo's section (■ Stop returns to normal)",
-      "msg.MEMO_OUT_OF_RANGE": "This section is longer than this file"
+      "msg.MEMO_OUT_OF_RANGE": "This section is longer than this file",
+      "feedback.title": "Feedback",
+      "feedback.button": "Send feedback",
+      "feedback.note": "This opens a Google Form on another page. Please don't write personal information such as your email address. Only the developer reads what you send. Replies are not possible."
     },
-    es: {
+    "es": {
       "slot.1": "1.º",
       "slot.2": "2.º",
       "slot.3": "3.º",
@@ -356,9 +362,12 @@
       "msg.MEMO_REPLACED": "El límite es 10, así que se borró el último tramo para guardar este",
       "msg.MEMO_NAME_PROMPT": "Nombre de este memo (hasta 20 caracteres; déjalo en blanco para quitarlo)",
       "msg.MEMO_SOLO": "Repitiendo solo el tramo de este memo (■ Detener vuelve a lo normal)",
-      "msg.MEMO_OUT_OF_RANGE": "Este tramo supera la duración de este archivo"
+      "msg.MEMO_OUT_OF_RANGE": "Este tramo supera la duración de este archivo",
+      "feedback.title": "Comentarios y sugerencias",
+      "feedback.button": "Enviar comentarios",
+      "feedback.note": "Se abre un formulario de Google en otra página. No escribas datos personales, como tu correo electrónico. Solo el desarrollador lee lo que envíes. No es posible responder."
     },
-    fil: {
+    "fil": {
       "slot.1": "Una",
       "slot.2": "Ikalawa",
       "slot.3": "Ikatlo",
@@ -473,7 +482,130 @@
       "msg.MEMO_REPLACED": "10 lang ang limitasyon, kaya binura ang nasa ibaba para ma-save ito",
       "msg.MEMO_NAME_PROMPT": "Pangalan ng memo na ito (hanggang 20 character; iwanang blanko para alisin)",
       "msg.MEMO_SOLO": "Inuulit lang ang bahagi ng memo na ito (■ Ihinto para bumalik sa normal)",
-      "msg.MEMO_OUT_OF_RANGE": "Lampas sa haba ng file na ito ang bahaging ito"
+      "msg.MEMO_OUT_OF_RANGE": "Lampas sa haba ng file na ito ang bahaging ito",
+      "feedback.title": "Puna at mungkahi",
+      "feedback.button": "Magpadala ng puna",
+      "feedback.note": "Magbubukas ang isang Google Form sa ibang pahina. Huwag magsulat ng personal na impormasyon gaya ng email address. Ang developer lang ang magbabasa ng ipapadala mo. Hindi makakasagot."
+    },
+    "zh-TW": {
+      "slot.1": "第1個",
+      "slot.2": "第2個",
+      "slot.3": "第3個",
+      "file.none": "未選擇檔案",
+      "label.PLAY_ON": "播放 ON",
+      "label.PLAY_OFF": "開啟播放",
+      "label.MEMO_SAVE": "儲存目前區段",
+      "file.1": "檔案 1",
+      "file.2": "檔案 2",
+      "file.3": "檔案 3",
+      "file.titleNamed": "檔案 {n}：{name}",
+      "empty.1": "按右側的 ⏏ 選擇已儲存的音檔",
+      "empty.2": "按右側的 ⏏ 選擇第2個音檔",
+      "empty.3": "按右側的 ⏏ 選擇第3個音檔",
+      "position": "目前位置",
+      "total": "總長 {t}",
+      "total.empty": "總長 --:--",
+      "mark.here": "設為",
+      "mark.start": "起點",
+      "mark.end": "終點",
+      "all.1": "全部",
+      "all.2": "範圍",
+      "memo.title": "區段備忘",
+      "memo.empty": "尚無已儲存的區段",
+      "memo.warn": "將被刪除",
+      "memo.placeholder": "（點一下即可命名）",
+      "settings": "設定",
+      "next.main": "移動區段",
+      "next.demoText": "螢幕下方一直顯示的這個按鈕，用來決定前進多少時間",
+      "plus.default": "+4 秒",
+      "plus.sec": "+{n} 秒",
+      "next.last": "最後一段",
+      "next.lastDetail": "這是最後一個區段",
+      "next.detail": "下一段：{a}–{b}（+{n} 秒）",
+      "move.time": "移動時間",
+      "unit.sec": "秒",
+      "gap.label": "間隔（秒）",
+      "gap.none": "無",
+      "btn.prev": "返回",
+      "tab.play": "播放",
+      "tab.edit": "區段",
+      "tab.memo": "備忘",
+      "range": "{a}–{b}",
+      "lang.title": "🌐 語言",
+      "lang.auto": "自動（依瀏覽器語言）",
+      "aria.pick": "選擇檔案",
+      "aria.pick.1": "選擇檔案 1",
+      "aria.all.1": "選取檔案 1 的全部範圍",
+      "aria.pick.2": "選擇檔案 2",
+      "aria.all.2": "選取檔案 2 的全部範圍",
+      "aria.pick.3": "選擇檔案 3",
+      "aria.all.3": "選取檔案 3 的全部範圍",
+      "aria.rate": "播放速度",
+      "aria.markStart": "將目前位置設為起點",
+      "aria.markEnd": "將目前位置設為終點",
+      "aria.start.inc10m": "起點 +10 分",
+      "aria.start.dec10m": "起點 -10 分",
+      "aria.start.inc1m": "起點 +1 分",
+      "aria.start.dec1m": "起點 -1 分",
+      "aria.start.inc10s": "起點 +10 秒",
+      "aria.start.dec10s": "起點 -10 秒",
+      "aria.start.inc1s": "起點 +1 秒",
+      "aria.start.dec1s": "起點 -1 秒",
+      "aria.end.inc10m": "終點 +10 分",
+      "aria.end.dec10m": "終點 -10 分",
+      "aria.end.inc1m": "終點 +1 分",
+      "aria.end.dec1m": "終點 -1 分",
+      "aria.end.inc10s": "終點 +10 秒",
+      "aria.end.dec10s": "終點 -10 秒",
+      "aria.end.inc1s": "終點 +1 秒",
+      "aria.end.dec1s": "終點 -1 秒",
+      "aria.memoSave": "將目前的起點與終點儲存為區段備忘",
+      "aria.moveMinus": "減少 1 秒",
+      "aria.movePlus": "增加 1 秒",
+      "aria.gap": "重複之間的靜音（秒）",
+      "aria.stop": "停止",
+      "aria.play": "播放",
+      "aria.pause": "暫停",
+      "aria.prev": "返回上一個區段",
+      "aria.tabs": "切換畫面",
+      "aria.grip": "重新排序（按住後上下移動）",
+      "aria.del": "刪除此區段",
+      "hint.NEXT": "依設定的時間移動區段",
+      "hint.MOVE_NOTE_N": "移動區段：起點與終點先倒退 1 秒，再前進 {n} 秒（實際 +{step} 秒）",
+      "hint.MOVE_NOTE_1": "移動區段：起點與終點直接前進 1 秒（僅在移動時間為 1 秒時適用）",
+      "hint.GAP": "每播放一次區段，就加入這個秒數的靜音",
+      "hint.RATE": "只改變速度，不改變音高。按下後立即播放（區段總長最多 3 分鐘）",
+      "hint.MEMO": "按「儲存目前區段」，會把目前的起點與終點存在最上方（最多 10 筆；已滿時，最下方的紅字項目會在下次儲存時被刪除）。點時間可播放該區段，點名稱可命名，按住 ≡ 並移動可重新排序，點 × 可刪除。",
+      "msg.FILE_LOADING": "正在載入檔案…",
+      "msg.FILE_ERROR": "無法載入。請確認是否為 mp3、m4a 或 wav 格式",
+      "msg.NO_FILE_SELECTED": "請先用 ⏏ 選擇檔案",
+      "msg.MOVE_SEC_INVALID": "移動時間請輸入 1 到 60 的數字",
+      "msg.MOVE_SEC_CLAMPED": "已調整為 1 到 60 的範圍",
+      "msg.REACHED_END": "已到達檔案結尾",
+      "msg.PLAY_BLOCKED": "無法播放。請再按一次播放按鈕",
+      "msg.INTERRUPTED": "播放被中斷。按播放按鈕即可繼續",
+      "msg.RATE_TOO_LONG": "區段太長，無法使用此速度（請在 3 分鐘以內）",
+      "msg.RATE_RESET_LONG": "區段較長，已將速度恢復為 1.0",
+      "msg.UPDATE_AVAILABLE": "有新版本。點這裡更新",
+      "msg.UPDATE_NOTE": "需要重新選擇檔案",
+      "msg.DOUBLE_TOO_LONG": "區段總長度太長（請在 40 分鐘以內）",
+      "msg.TRIPLE_TOO_LONG": "區段總長度太長（請在 60 分鐘以內）",
+      "msg.TRIPLE_MONO_NOTICE": "因為檔案較長，為節省記憶體已轉為單聲道",
+      "msg.REACHED_START": "這是第一個區段",
+      "msg.MARK_NEED_PLAY": "請在播放中按下",
+      "msg.MARK_OTHER_SLOT": "請按下目前正在播放的檔案的「設為」按鈕",
+      "msg.RESTORE_FAILED": "無法載入上次的檔案。請用 ⏏ 選擇",
+      "msg.RESTORE_SKIPPED": "上次載入中途停止，因此略過自動還原。請用 ⏏ 選擇檔案",
+      "msg.NO_B_FILE_SELECTED": "要選擇第2個音檔，請按第2個 ⏏",
+      "msg.MEMO_SAVED": "已儲存區段",
+      "msg.MEMO_DUP": "此區段已儲存",
+      "msg.MEMO_REPLACED": "最多 10 筆，已刪除最下方的區段後儲存",
+      "msg.MEMO_NAME_PROMPT": "此備忘的名稱（最多 20 個字；留空則清除名稱）",
+      "msg.MEMO_SOLO": "正在重複播放此備忘的區段（按 ■ 停止即可恢復）",
+      "msg.MEMO_OUT_OF_RANGE": "此區段超出這個檔案的長度",
+      "feedback.title": "意見與建議",
+      "feedback.button": "傳送意見與建議",
+      "feedback.note": "按下後會在另一個頁面開啟 Google 表單。請勿填寫電子郵件等個人資料。內容只有開發者會看到，且無法回覆。"
     }
   };
 
@@ -492,6 +624,7 @@
     for (var i = 0; i < list.length; i++) {
       var code = String(list[i] || '').toLowerCase().split('-')[0];
       if (code === 'tl' || code === 'fil') return 'fil';
+      if (code === 'zh') return 'zh-TW';     // 中国語は、地域や文字の種類に関わらず繁體中文（台灣）にする
       if (LANGS.indexOf(code) >= 0) return code;
     }
     return 'en';

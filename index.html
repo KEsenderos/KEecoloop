@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="css/style.css">
-<!-- index.html / KEecoloop 本体 / 仕様書 v3.2.0 4章 -->
+<!-- index.html / KEecoloop 本体 / 仕様書 v3.3.0 4章 -->
 </head>
 <body>
 <main class="app">
@@ -367,6 +367,12 @@
     </div>
   </section>
 
+  <section id="card-feedback" class="card card-feedback" hidden>
+    <div class="fb-title" data-i18n="feedback.title">ご意見・ご要望</div>
+    <div class="hint" data-i18n="feedback.note">押すとGoogleフォームが別のページで開きます。メールアドレスなどの個人情報は書かないでください。内容は開発者だけが読みます。返信はできません。</div>
+    <a id="link-feedback" class="fb-btn" href="#" target="_blank" rel="noopener noreferrer" data-i18n="feedback.button">ご意見・ご要望を送る</a>
+  </section>
+
   <section class="card card-lang">
     <div class="lang-row">
       <label for="select-lang" class="interval-label" data-i18n="lang.title">🌐 言語</label>
@@ -376,6 +382,7 @@
         <option value="en">English</option>
         <option value="es">Español</option>
         <option value="fil">Filipino (Tagalog)</option>
+        <option value="zh-TW">繁體中文（台灣）</option>
       </select>
     </div>
   </section>

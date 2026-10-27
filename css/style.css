@@ -1,4 +1,4 @@
-/* css/style.css / KEecoloop 見た目 / 仕様書 v3.2.0 4章 */
+/* css/style.css / KEecoloop 見た目 / 仕様書 v3.3.0 4章 */
 :root {
   --bg: #0C1016;
   --surface: #131922;
@@ -439,3 +439,13 @@ body.kb-open .dock, body.kb-open .tab-bar { display: none; }
   flex: 1; min-width: 0; max-width: 210px; font-family: inherit; font-size: 16px; color: var(--text);
   background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px;
 }
+
+/* ---- v3.3.0: ご意見・ご要望の枠（設定タブ） ---- */
+.card-feedback { display: flex; flex-direction: column; gap: 10px; padding: 14px; }
+.card-feedback[hidden] { display: none; }
+.fb-title { font-size: 15px; font-weight: 700; color: var(--text); }
+.fb-btn {
+  display: flex; align-items: center; justify-content: center; min-height: 48px; border-radius: 12px; padding: 0 14px;
+  background: var(--accent); color: #111; font-weight: 700; font-size: 16px; text-decoration: none; text-align: center;
+}
+.fb-btn:active { opacity: 0.85; }
