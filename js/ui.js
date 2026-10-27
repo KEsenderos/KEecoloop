@@ -1,4 +1,4 @@
-/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v3.1.6 4章・4.3章・9.5章 / 版 3.1.6 */
+/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v3.1.7 4章・4.3章・9.5章 / 版 3.1.7 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -156,33 +156,14 @@
   /** 区間メモ欄: タップ・削除（イベント委譲）と、「≡」のドラッグ並べ替え */
   var drag = null;
 
-  var lpSuppress = false;
-
   function bindMemoList_(h, list) {
-    // v3.1.6: 長押しで名前を付ける（動かしたら取り消し）
-    var lp = null;
-    function lpClear() { if (lp) { clearTimeout(lp.timer); lp = null; } }
-    list.addEventListener('pointerdown', function (ev) {
-      lpSuppress = false;
-      var m = ev.target.closest ? ev.target.closest('.memo-chip-main') : null;
-      if (!m || drag) return;
-      lpClear();
-      var slot = m.getAttribute('data-slot'), id = m.getAttribute('data-id');
-      lp = { x: ev.clientX, y: ev.clientY, timer: setTimeout(function () {
-        lp = null; lpSuppress = true; h.onMemoRename(slot, id);
-      }, C.MEMO_LONGPRESS_MS) };
-    });
-    list.addEventListener('pointermove', function (ev) {
-      if (lp && (Math.abs(ev.clientX - lp.x) > 10 || Math.abs(ev.clientY - lp.y) > 10)) lpClear();
-    });
-    list.addEventListener('pointerup', lpClear);
-    list.addEventListener('pointercancel', lpClear);
     list.addEventListener('click', function (ev) {
       var t = ev.target;
       var main = t.closest ? t.closest('.memo-chip-main') : null;
       var del = t.closest ? t.closest('.memo-chip-del') : null;
-      if (lpSuppress) { lpSuppress = false; return; }   // 長押しで名前を付けたあとの「タップ」は無視する
-      if (main) h.onMemoTap(main.getAttribute('data-slot'), main.getAttribute('data-id'));
+      var nameBox = t.closest ? t.closest('.memo-chip-name') : null;
+      if (main && nameBox) h.onMemoRename(main.getAttribute('data-slot'), main.getAttribute('data-id'));   // v3.1.7: 名前の部分のタップ＝名前を付ける
+      else if (main) h.onMemoTap(main.getAttribute('data-slot'), main.getAttribute('data-id'));
       else if (del) h.onMemoDelete(del.getAttribute('data-slot'), del.getAttribute('data-id'));
     });
     list.addEventListener('pointerdown', function (ev) {
@@ -255,7 +236,9 @@
       main.setAttribute('data-slot', slot); main.setAttribute('data-id', m.id);
       var nb = document.createElement('span');
       nb.className = 'memo-chip-name';
-      if (m.name) { var ns = document.createElement('span'); ns.textContent = m.name; nb.appendChild(ns); }
+      var ns = document.createElement('span');
+      if (m.name) ns.textContent = m.name; else { ns.textContent = C.MEMO_NAME_PLACEHOLDER; ns.className = 'memo-name-empty'; }
+      nb.appendChild(ns);
       main.appendChild(nb);
       if (full && i === items.length - 1) {
         var w = document.createElement('span');

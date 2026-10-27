@@ -1,4 +1,4 @@
-/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v3.1.6 4.3・5.3・5.15・9.6章 / 版 3.1.6 */
+/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v3.1.7 4.3・5.3・5.15・9.6章 / 版 3.1.7 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -505,7 +505,7 @@
       RE.UI.showMessage(C.MSG.MEMO_SOLO);
     },
 
-    /** 区間メモの名前を付ける・変える（v3.1.6）。長押しで呼ばれる。キャンセルなら何もしない。空欄なら名前を消す */
+    /** 区間メモの名前を付ける・変える（v3.1.6）。名前の部分のタップで呼ばれる（v3.1.7）。キャンセルなら何もしない。空欄なら名前を消す */
     onMemoRename: function (slot, id) {
       var list = memosOf_(slot), m = null, i;
       for (i = 0; i < list.length; i++) { if (list[i].id === id) m = list[i]; }

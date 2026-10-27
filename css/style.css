@@ -1,4 +1,4 @@
-/* css/style.css / KEecoloop 見た目 / 仕様書 v3.1.6 4章 */
+/* css/style.css / KEecoloop 見た目 / 仕様書 v3.1.7 4章 */
 :root {
   --bg: #0C1016;
   --surface: #131922;
@@ -427,3 +427,7 @@ body.kb-open .dock, body.kb-open .tab-bar { display: none; }
 .memo-chip-main { padding-left: 8px; gap: 4px; }
 .memo-chip-time { font-size: 14px; }
 .memo-group .memo-chip-del, .memo-chip-del { width: 34px; height: 34px; margin: 0 4px 0 1px; font-size: 18px; }
+
+/* v3.1.7: 名前が空のときの案内文は薄く。名前の部分はタップできる */
+.memo-chip-name > .memo-name-empty { opacity: 0.5; font-size: 12px; }
+.memo-chip-name { cursor: text; }
