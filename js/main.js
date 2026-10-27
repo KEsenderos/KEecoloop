@@ -1,4 +1,4 @@
-/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v3.1.7 4.3・5.3・5.15・9.6章 / 版 3.1.7 */
+/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v3.2.0 4.3・5.3・5.15・9.6章 / 版 3.2.0 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -503,6 +503,13 @@
       render_();
       RE.Engine.playSolo(slot);   // v3.1.5: そのメモの区間だけを単独でくり返す（他のスロットへ移らない）
       RE.UI.showMessage(C.MSG.MEMO_SOLO);
+    },
+
+    /** 言語の切り替え（v3.2.0）。value は "auto"・"ja"・"en"・"es"・"fil"。選びは端末に保存し、画面を書き直す */
+    onLangChange: function (value) {
+      RE.I18n.setPref(value);
+      RE.UI.clearMessage();
+      RE.UI.refreshLanguage();
     },
 
     /** 区間メモの名前を付ける・変える（v3.1.6）。名前の部分のタップで呼ばれる（v3.1.7）。キャンセルなら何もしない。空欄なら名前を消す */

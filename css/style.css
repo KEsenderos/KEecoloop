@@ -1,4 +1,4 @@
-/* css/style.css / KEecoloop 見た目 / 仕様書 v3.1.7 4章 */
+/* css/style.css / KEecoloop 見た目 / 仕様書 v3.2.0 4章 */
 :root {
   --bg: #0C1016;
   --surface: #131922;
@@ -431,3 +431,11 @@ body.kb-open .dock, body.kb-open .tab-bar { display: none; }
 /* v3.1.7: 名前が空のときの案内文は薄く。名前の部分はタップできる */
 .memo-chip-name > .memo-name-empty { opacity: 0.5; font-size: 12px; }
 .memo-chip-name { cursor: text; }
+
+/* ---- v3.2.0: 言語の選択（設定タブ） ---- */
+.card-lang { padding: 12px 14px; }
+.lang-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.lang-row select {
+  flex: 1; min-width: 0; max-width: 210px; font-family: inherit; font-size: 16px; color: var(--text);
+  background: var(--surface-2); border: 1px solid var(--line); border-radius: 10px; padding: 9px 10px;
+}

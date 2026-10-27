@@ -1,11 +1,21 @@
-/* js/config.js / 定数（RE.Config） / 仕様書 v3.1.7 7章 / 版 3.1.7 */
+/* js/config.js / 定数（RE.Config） / 仕様書 v3.2.0 7章 / 版 3.2.0 */
 (function () {
   'use strict';
   window.RE = window.RE || {};
 
+  /** 画面の文言（v3.2.0）。読むたびに、いまの言語の文言を返す（RE.I18n.t(prefix + 名前)）。plain は言語に関係ない値 */
+  function tr_(prefix, names, plain) {
+    var o = {}, k;
+    names.forEach(function (n) {
+      Object.defineProperty(o, n, { enumerable: true, get: function () { return RE.I18n.t(prefix + n); } });
+    });
+    for (k in (plain || {})) o[k] = plain[k];
+    return Object.freeze(o);
+  }
+
   RE.Config = Object.freeze({
     APP_NAME: 'KEecoloop',
-    APP_VERSION: '3.1.7',
+    APP_VERSION: '3.2.0',
     ENGINE_TYPE: 'WEB_AUDIO',
     MOVE_SEC_MIN: 1,
     MOVE_SEC_MAX: 60,
@@ -42,56 +52,21 @@
     // 区間メモ（v2.9）
     MEMO_MAX_PER_FILE: 10,
     MEMO_NAME_MAX: 20,          // v3.1.6: 区間メモの名前の最大文字数
-    MEMO_NAME_PLACEHOLDER: '（タップして名前を付ける）',   // v3.1.7: 名前が空のときの表示
+    get MEMO_NAME_PLACEHOLDER() { return RE.I18n.t('memo.placeholder'); },   // v3.1.7: 名前が空のときの表示（v3.2.0: 言語対応）
     MEMO_MAX_FILES: 50,
     SAVE_MAX_BYTES: 41943040,
     RESTORE_TIMEOUT_MS: 4000,
     // 説明文（画面の各所の小さい文字）。印を変えるときは PREFIX だけ直す
-    HINT: Object.freeze({
-      PREFIX: '※ ',
-      NEXT: '指定した時間を移動させます',
-      MOVE_NOTE_N: '区間移動: 開始・終了を1秒戻してから、{n}秒進めます（実質＋{step}秒）',
-      MOVE_NOTE_1: '区間移動: 開始・終了をそのまま1秒進めます（移動時間が1秒のときだけの決まり）',
-      GAP: '区間を1回聞くごとに、この秒数の無音を入れます',
-      RATE: '声の高さはそのままで、速さだけ変えます。押すとすぐ再生（区間の合計3分まで）',
-      MEMO: '「現在の区間をメモ」で今の開始・終了を最上部に残します（10件まで。10件のとき、赤字の最下部は次の保存で消えます）。時間の部分をタップでその区間を再生、名前の部分をタップで名前を付ける、≡を押しながら動かして並べ替え、×で削除'
-    }),
-    LABEL: Object.freeze({ MEMO_SAVE: '現在の区間をメモ', PLAY_ON: '再生ON', PLAY_OFF: '再生ONにする' }),
+    HINT: tr_('hint.', ['NEXT', 'MOVE_NOTE_N', 'MOVE_NOTE_1', 'GAP', 'RATE', 'MEMO'], { PREFIX: '※ ' }),
+    LABEL: tr_('label.', ['MEMO_SAVE', 'PLAY_ON', 'PLAY_OFF']),
     UI_REFRESH_MS: 250,
     MINUTES_MAX_DIGITS: 2,
     BAR_MARKER_MIN_PX: 8,
     KEEPALIVE_SILENT_AUDIO: true,
     STORAGE_KEY_MOVE: 're.moveSec',
+    STORAGE_KEY_LANG: 're.lang',   // v3.2.0: 言語の選び（auto / ja / en / es / fil）
     PLAYER_STATE: Object.freeze({ NO_FILE: 'NO_FILE', STOPPED: 'STOPPED', PLAYING: 'PLAYING', PAUSED: 'PAUSED' }),
     ERR: Object.freeze({ DECODE: 'DECODE', PLAY_BLOCKED: 'PLAY_BLOCKED', INTERRUPTED: 'INTERRUPTED', TOO_LONG: 'TOO_LONG' }),
-    MSG: Object.freeze({
-      FILE_LOADING: 'ファイルを読み込み中…',
-      FILE_ERROR: '読み込めませんでした。mp3・m4a・wav形式か確認してください',
-      NO_FILE_SELECTED: 'まず ⏏ でファイルを選んでください',
-      MOVE_SEC_INVALID: '移動時間は1〜60の数字で入力してください',
-      MOVE_SEC_CLAMPED: '1〜60の範囲に直しました',
-      REACHED_END: 'ファイルの終わりに達しました',
-      PLAY_BLOCKED: '再生できませんでした。もう一度再生ボタンを押してください',
-      INTERRUPTED: '再生が中断されました。再生ボタンで再開できます',
-      RATE_TOO_LONG: '区間が長すぎるため、この倍速は使えません（3分以内にしてください）',
-      RATE_RESET_LONG: '区間が長いため、倍速を1.0に戻しました',
-      UPDATE_AVAILABLE: '新しい版があります。ここをタップして更新',
-      UPDATE_NOTE: '選んだファイルは選び直しになります',
-      DOUBLE_TOO_LONG: '区間の合計が長すぎます（40分以内にしてください）',
-      TRIPLE_TOO_LONG: '区間の合計が長すぎます（60分以内にしてください）',
-      TRIPLE_MONO_NOTICE: '長いファイルのため、メモリ節約でモノラルにしました',
-      REACHED_START: '最初の区間です',
-      MARK_NEED_PLAY: '再生中に押してください',
-      MARK_OTHER_SLOT: '今鳴っている側の「ここを」ボタンを押してください',
-      RESTORE_FAILED: '前回のファイルを読み込めませんでした。⏏ で選んでください',
-      RESTORE_SKIPPED: '前回の読み込みが途中で止まったため、自動再開をやめました。⏏ で選んでください',
-      NO_B_FILE_SELECTED: '2つ目の音声を選ぶには、2つ目の ⏏ を押してください',
-      MEMO_SAVED: '区間を保存しました',
-      MEMO_DUP: '同じ区間がすでに保存されています',
-      MEMO_REPLACED: '10件までのため、いちばん下の区間を消して保存しました',
-      MEMO_NAME_PROMPT: 'このメモの名前（20文字まで。空欄で名前を消します）',
-      MEMO_SOLO: 'このメモの区間だけをくり返し中です（■停止で通常に戻ります）',
-      MEMO_OUT_OF_RANGE: 'この区間は、このファイルの長さを超えています'
-    })
+    MSG: tr_('msg.', ['FILE_LOADING', 'FILE_ERROR', 'NO_FILE_SELECTED', 'MOVE_SEC_INVALID', 'MOVE_SEC_CLAMPED', 'REACHED_END', 'PLAY_BLOCKED', 'INTERRUPTED', 'RATE_TOO_LONG', 'RATE_RESET_LONG', 'UPDATE_AVAILABLE', 'UPDATE_NOTE', 'DOUBLE_TOO_LONG', 'TRIPLE_TOO_LONG', 'TRIPLE_MONO_NOTICE', 'REACHED_START', 'MARK_NEED_PLAY', 'MARK_OTHER_SLOT', 'RESTORE_FAILED', 'RESTORE_SKIPPED', 'NO_B_FILE_SELECTED', 'MEMO_SAVED', 'MEMO_DUP', 'MEMO_REPLACED', 'MEMO_NAME_PROMPT', 'MEMO_SOLO', 'MEMO_OUT_OF_RANGE'])
   });
 })();

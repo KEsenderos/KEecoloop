@@ -1,4 +1,4 @@
-/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v3.1.7 4章・4.3章・9.5章 / 版 3.1.7 */
+/* js/ui.js / 画面の読み書き・イベント設定（RE.UI） / 仕様書 v3.2.0 4章・4.3章・9.5章 / 版 3.2.0 */
 (function () {
   'use strict';
   var C = RE.Config;
@@ -16,13 +16,15 @@
   function endOf_(slot) { var St = RE.State; return slot === 'C' ? St.endSecC : (slot === 'B' ? St.endSecB : St.endSec); }
   function memosOf_(slot) { var St = RE.State; return slot === 'C' ? St.memosC : (slot === 'B' ? St.memosB : St.memosA); }
 
+  function tr_(key, params) { return RE.I18n.t(key, params); }
+
   function collectElements_() {
     ['btn-eject', 'input-file', 'txt-file-label', 'txt-filename', 'txt-file-hint', 'txt-position', 'txt-duration',
       'bar-track', 'bar-played', 'bar-marker', 'txt-bar-start', 'txt-bar-end', 
       'btn-move-minus', 'input-move', 'btn-move-plus', 'txt-move-note', 'txt-message', 'btn-stop', 'btn-play',
       'icon-play', 'icon-pause', 'btn-next', 'txt-next-hint', 'txt-version',
       'banner-update', 'txt-update-main', 'txt-update-note',
-      'btn-all', 'b-btn-all', 'c-btn-all', 'txt-move-demo-hint', 'btn-prev', 'txt-hint-next', 'txt-hint-gap', 'txt-hint-rate', 'input-file-b', 'input-file-c', 'pane-a', 'pane-b', 'pane-c', 'screen-play', 'screen-edit', 'screen-memo', 'screen-settings', 'tab-bar', 'dock', 'txt-next-detail', 'group-memo-a', 'b-btn-eject', 'b-txt-file-label', 'b-txt-filename', 'b-txt-file-hint',
+      'btn-all', 'b-btn-all', 'c-btn-all', 'txt-move-demo-hint', 'select-lang', 'btn-prev', 'txt-hint-next', 'txt-hint-gap', 'txt-hint-rate', 'input-file-b', 'input-file-c', 'pane-a', 'pane-b', 'pane-c', 'screen-play', 'screen-edit', 'screen-memo', 'screen-settings', 'tab-bar', 'dock', 'txt-next-detail', 'group-memo-a', 'b-btn-eject', 'b-txt-file-label', 'b-txt-filename', 'b-txt-file-hint',
       'b-txt-position', 'b-txt-duration', 'b-bar-track', 'b-bar-played', 'b-bar-marker', 'b-txt-bar-end',
       'c-btn-eject', 'c-txt-file-label', 'c-txt-filename', 'c-txt-file-hint', 'c-txt-position', 'c-txt-duration', 'c-bar-track', 'c-bar-played', 'c-bar-marker', 'c-txt-bar-end',
       'c-btn-memo-save', 'group-memo-c', 'memo-title-c', 'memo-list-c', 'txt-memo-empty-c',
@@ -47,11 +49,13 @@
     collectElements_();
     bindEvents_(handlers);
     el['txt-version'].textContent = 'v' + C.APP_VERSION;
-    renderHints_();
+    el['select-lang'].value = RE.I18n.getPref();
+    refreshLanguage();
   }
 
   function bindEvents_(h) {
     el['banner-update'].addEventListener('click', function () { h.onUpdateTap(); });
+    el['select-lang'].addEventListener('change', function (ev) { h.onLangChange(ev.target.value); });
     el['btn-eject'].addEventListener('click', function () { h.onEject(); });
     el['input-file'].addEventListener('change', function (ev) {
       var f = ev.target.files && ev.target.files[0];
@@ -217,7 +221,7 @@
     var curS = startOf_(slot), curE = endOf_(slot);
     var full = items.length >= C.MEMO_MAX_PER_FILE;
     // 内容が前回と同じなら作り直さない（名前のスライドがやり直しにならないように）
-    var sig = JSON.stringify([items.map(function (m) { return [m.id, m.s, m.e, m.name || '']; }), curS, curE, full]);
+    var sig = JSON.stringify([items.map(function (m) { return [m.id, m.s, m.e, m.name || '']; }), curS, curE, full, RE.I18n.getLang()]);
     if (list.getAttribute('data-sig') === sig && list.firstChild) { slideNames_(list); return; }
     list.setAttribute('data-sig', sig);
     list.textContent = '';
@@ -229,7 +233,7 @@
       var grip = document.createElement('button');
       grip.type = 'button'; grip.className = 'memo-chip-grip';
       grip.setAttribute('data-slot', slot); grip.setAttribute('data-index', String(i));
-      grip.setAttribute('aria-label', '並べ替え（押したまま上下に動かす）');
+      grip.setAttribute('aria-label', tr_('aria.grip'));
       grip.innerHTML = '<svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true"><path d="M5 7h14M5 12h14M5 17h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>';
       var main = document.createElement('button');
       main.type = 'button'; main.className = 'memo-chip-main';
@@ -242,17 +246,17 @@
       main.appendChild(nb);
       if (full && i === items.length - 1) {
         var w = document.createElement('span');
-        w.className = 'memo-chip-warn'; w.textContent = '次に消える';
+        w.className = 'memo-chip-warn'; w.textContent = tr_('memo.warn');
         main.appendChild(w);
       }
       var t = document.createElement('span');
       t.className = 'memo-chip-time';
-      t.textContent = U.formatTime(m.s) + '〜' + U.formatTime(m.e);
+      t.textContent = tr_('range', { a: U.formatTime(m.s), b: U.formatTime(m.e) });
       main.appendChild(t);
       var del = document.createElement('button');
       del.type = 'button'; del.className = 'memo-chip-del';
       del.setAttribute('data-slot', slot); del.setAttribute('data-id', m.id);
-      del.setAttribute('aria-label', 'この区間を削除');
+      del.setAttribute('aria-label', tr_('aria.del'));
       del.textContent = '×';
       chip.appendChild(grip); chip.appendChild(main); chip.appendChild(del);
       list.appendChild(chip);
@@ -282,7 +286,7 @@
     if (drag) return;
     ['A', 'B', 'C'].forEach(function (X, i) {
       var x = X.toLowerCase();
-      el['memo-title-' + x].textContent = (i + 1) + 'つ目のファイル' + (nameOf_(X) ? '：' + nameOf_(X) : '');
+      el['memo-title-' + x].textContent = nameOf_(X) ? tr_('file.titleNamed', { n: i + 1, name: nameOf_(X) }) : tr_('file.' + (i + 1));
       el[(x === 'a' ? '' : x + '-') + 'btn-memo-save'].textContent = C.LABEL.MEMO_SAVE;
       renderMemoList_(X);
     });
@@ -329,7 +333,15 @@
     });
   }
 
-  /** 固定の説明文を書き込む（起動時に1回） */
+  /** 言語を切り替えたとき・起動時: 静的な文字と説明文を書き直し、画面を描き直す（v3.2.0） */
+  function refreshLanguage() {
+    RE.I18n.applyDom();
+    renderHints_();
+    if (el['select-lang']) el['select-lang'].value = RE.I18n.getPref();
+    try { render(); } catch (e) { /* 起動直後で状態が未準備なら無視 */ }
+  }
+
+  /** 固定の説明文を書き込む（起動時と言語切り替え時） */
   function renderHints_() {
     var H = C.HINT;
     el['txt-hint-next'].textContent = H.PREFIX + H.NEXT;
@@ -342,7 +354,7 @@
     // SVG要素には hidden 属性が効かないため、style.display で切り替える
     el['icon-play'].style.display = isPlaying ? 'none' : '';
     el['icon-pause'].style.display = isPlaying ? '' : 'none';
-    el['btn-play'].setAttribute('aria-label', isPlaying ? '一時停止' : '再生');
+    el['btn-play'].setAttribute('aria-label', isPlaying ? tr_('aria.pause') : tr_('aria.play'));
   }
 
   var DIGIT_KEYS = ['m10', 'm1', 's10', 's1'];
@@ -388,16 +400,16 @@
   function updateNextHint_() {
     var St = RE.State;
     var step = U.calcStepSec(St.moveSec);
-    el['txt-move-demo-hint'].textContent = '＋' + step + '秒';
+    el['txt-move-demo-hint'].textContent = tr_('plus.sec', { n: step });
     if (St.playerState !== S.NO_FILE && (St.endSec >= St.durationSec || St.startSec + step >= St.durationSec)) {
-      el['txt-next-hint'].textContent = '最後の区間';
-      el['txt-next-detail'].textContent = '最後の区間です';
+      el['txt-next-hint'].textContent = tr_('next.last');
+      el['txt-next-detail'].textContent = tr_('next.lastDetail');
     } else if (St.playerState === S.NO_FILE) {
-      el['txt-next-hint'].textContent = '＋' + step + '秒';
+      el['txt-next-hint'].textContent = tr_('plus.sec', { n: step });
       el['txt-next-detail'].textContent = '';
     } else {
-      el['txt-next-hint'].textContent = '＋' + step + '秒';
-      el['txt-next-detail'].textContent = '次は ' + U.formatTime(St.startSec + step) + '〜' + U.formatTime(Math.min(St.endSec + step, St.durationSec)) + '（＋' + step + '秒）';
+      el['txt-next-hint'].textContent = tr_('plus.sec', { n: step });
+      el['txt-next-detail'].textContent = tr_('next.detail', { a: U.formatTime(St.startSec + step), b: U.formatTime(Math.min(St.endSec + step, St.durationSec)), n: step });
     }
   }
 
@@ -425,10 +437,10 @@
         el['play-toggle-' + x].classList.toggle('on', on);
         el['play-toggle-' + x].setAttribute('aria-pressed', on ? 'true' : 'false');
       }
-      el['play-name-' + x].textContent = has ? nameOf_(X) : 'ファイル未選択';
+      el['play-name-' + x].textContent = has ? nameOf_(X) : tr_('file.none');
       el['play-name-' + x].classList.toggle('empty', !has);
       el['play-eject-' + x].classList.toggle('attention', !has);
-      el['play-range-' + x].textContent = has ? U.formatTime(start) + '〜' + U.formatTime(endOf_(X)) : '--:--〜--:--';
+      el['play-range-' + x].textContent = has ? tr_('range', { a: U.formatTime(start), b: U.formatTime(endOf_(X)) }) : tr_('range', { a: '--:--', b: '--:--' });
       el['play-pos-' + x].classList.toggle('empty', !has);
       if (!has) el['play-pos-' + x].textContent = '00:00';
       var track = el['play-bar-' + x], marker = el['play-bar-marker-' + x], fill = el['play-bar-fill-' + x];
@@ -444,25 +456,25 @@
     var noFile = St.playerState === S.NO_FILE;
     var noA = !St.fileName, noB = !St.fileNameB, noC = !St.fileNameC;
     renderTabsAndPanes_();
-    el['txt-filename'].textContent = noA ? 'ファイル未選択' : St.fileName;
+    el['txt-filename'].textContent = noA ? tr_('file.none') : St.fileName;
     el['txt-filename'].classList.toggle('empty', noA);
     el['txt-file-hint'].hidden = !noA;
     el['btn-eject'].classList.toggle('attention', noA);
-    el['txt-duration'].textContent = '全体 ' + (noA ? '--:--' : U.formatTime(St.durationSec));
+    el['txt-duration'].textContent = tr_('total', { t: noA ? '--:--' : U.formatTime(St.durationSec) });
     if (noA) el['txt-position'].textContent = '00:00';
     el['txt-position'].classList.toggle('empty', noA);
-    el['b-txt-filename'].textContent = noB ? 'ファイル未選択' : St.fileNameB;
+    el['b-txt-filename'].textContent = noB ? tr_('file.none') : St.fileNameB;
     el['b-txt-filename'].classList.toggle('empty', noB);
     el['b-txt-file-hint'].hidden = !noB;
     el['b-btn-eject'].classList.toggle('attention', noB);
-    el['b-txt-duration'].textContent = '全体 ' + (noB ? '--:--' : U.formatTime(St.durationSecB));
+    el['b-txt-duration'].textContent = tr_('total', { t: noB ? '--:--' : U.formatTime(St.durationSecB) });
     if (noB) el['b-txt-position'].textContent = '00:00';
     el['b-txt-position'].classList.toggle('empty', noB);
-    el['c-txt-filename'].textContent = noC ? 'ファイル未選択' : St.fileNameC;
+    el['c-txt-filename'].textContent = noC ? tr_('file.none') : St.fileNameC;
     el['c-txt-filename'].classList.toggle('empty', noC);
     el['c-txt-file-hint'].hidden = !noC;
     el['c-btn-eject'].classList.toggle('attention', noC);
-    el['c-txt-duration'].textContent = '全体 ' + (noC ? '--:--' : U.formatTime(St.durationSecC));
+    el['c-txt-duration'].textContent = tr_('total', { t: noC ? '--:--' : U.formatTime(St.durationSecC) });
     if (noC) el['c-txt-position'].textContent = '00:00';
     el['c-txt-position'].classList.toggle('empty', noC);
     renderDigits_('A');
@@ -513,6 +525,7 @@
 
   RE.UI = {
     init: init,
+    refreshLanguage: refreshLanguage,
     showUpdateBanner: showUpdateBanner,
     render: render,
     openFilePicker: openFilePicker,
