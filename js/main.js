@@ -1,4 +1,4 @@
-/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v3.1.1 4.3・5.3・5.15・9.6章 / 版 3.1.1 */
+/* js/main.js / 起動処理・各操作の司令塔（RE.Main） / 仕様書 v3.1.2 4.3・5.3・5.15・9.6章 / 版 3.1.2 */
 (function () {
   'use strict';
   var C = RE.Config;

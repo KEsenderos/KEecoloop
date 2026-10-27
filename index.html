@@ -12,7 +12,7 @@
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="stylesheet" href="css/style.css">
-<!-- index.html / KEecoloop 本体 / 仕様書 v3.1.1 4章 -->
+<!-- index.html / KEecoloop 本体 / 仕様書 v3.1.2 4章 -->
 </head>
 <body>
 <main class="app">
@@ -35,13 +35,13 @@
       <div class="play-bar"><div id="play-bar-fill-a" class="play-bar-fill"></div><div id="play-bar-marker-a" class="play-bar-marker"></div></div>
     </div>
     <div id="play-row-b" class="play-row">
-      <div class="play-head"><span class="play-head-l"><span id="play-label-b" class="play-label">2つ目</span><button id="play-toggle-b" class="play-toggle" type="button" data-slot="B" aria-pressed="false">再生OFF</button></span><span id="play-range-b" class="play-range">--:--〜--:--</span></div>
+      <div class="play-head"><span class="play-head-l"><span id="play-label-b" class="play-label">2つ目</span><button id="play-toggle-b" class="play-toggle" type="button" data-slot="B" aria-pressed="false">再生ONにする</button></span><span id="play-range-b" class="play-range">--:--〜--:--</span></div>
       <div class="play-name-row"><div id="play-name-b" class="play-name empty">ファイル未選択</div><button id="play-eject-b" class="icon-btn play-eject" type="button" aria-label="2つ目のファイルを選ぶ"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 5 4 15h16z" fill="currentColor"/><rect x="4" y="17.5" width="16" height="2.5" rx="1" fill="currentColor"/></svg></button></div>
       <div id="play-pos-b" class="play-pos empty">00:00</div>
       <div class="play-bar"><div id="play-bar-fill-b" class="play-bar-fill"></div><div id="play-bar-marker-b" class="play-bar-marker"></div></div>
     </div>
     <div id="play-row-c" class="play-row">
-      <div class="play-head"><span class="play-head-l"><span id="play-label-c" class="play-label">3つ目</span><button id="play-toggle-c" class="play-toggle" type="button" data-slot="C" aria-pressed="false">再生OFF</button></span><span id="play-range-c" class="play-range">--:--〜--:--</span></div>
+      <div class="play-head"><span class="play-head-l"><span id="play-label-c" class="play-label">3つ目</span><button id="play-toggle-c" class="play-toggle" type="button" data-slot="C" aria-pressed="false">再生ONにする</button></span><span id="play-range-c" class="play-range">--:--〜--:--</span></div>
       <div class="play-name-row"><div id="play-name-c" class="play-name empty">ファイル未選択</div><button id="play-eject-c" class="icon-btn play-eject" type="button" aria-label="3つ目のファイルを選ぶ"><svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 5 4 15h16z" fill="currentColor"/><rect x="4" y="17.5" width="16" height="2.5" rx="1" fill="currentColor"/></svg></button></div>
       <div id="play-pos-c" class="play-pos empty">00:00</div>
       <div class="play-bar"><div id="play-bar-fill-c" class="play-bar-fill"></div><div id="play-bar-marker-c" class="play-bar-marker"></div></div>
@@ -114,7 +114,7 @@
           </div>
       </div>
     </div>
-    <div class="time-sep"><button id="btn-all" class="all-btn" type="button" data-slot="A" aria-label="1つ目を全範囲にする"><span>全範囲</span></button><span class="time-sep-line"></span></div>
+    <div class="time-sep"><button id="btn-all" class="all-btn" type="button" data-slot="A" aria-label="1つ目を全範囲にする"><span>全範囲</span><span>選択</span></button><span class="time-sep-line"></span></div>
     <div id="row-end" class="time-row">
       <button id="btn-mark-end" class="mark-btn" type="button" data-slot="A" data-mark="end" aria-label="今の位置を終了にする"><span>ここを</span><span>終了</span></button>
       <div class="digits">
@@ -195,7 +195,7 @@
           </div>
       </div>
     </div>
-    <div class="time-sep"><button id="b-btn-all" class="all-btn" type="button" data-slot="B" aria-label="2つ目を全範囲にする"><span>全範囲</span></button><span class="time-sep-line"></span></div>
+    <div class="time-sep"><button id="b-btn-all" class="all-btn" type="button" data-slot="B" aria-label="2つ目を全範囲にする"><span>全範囲</span><span>選択</span></button><span class="time-sep-line"></span></div>
     <div id="b-row-end" class="time-row">
       <button id="b-btn-mark-end" class="mark-btn" type="button" data-slot="B" data-mark="end" aria-label="今の位置を終了にする"><span>ここを</span><span>終了</span></button>
       <div class="digits">
@@ -276,7 +276,7 @@
           </div>
       </div>
     </div>
-    <div class="time-sep"><button id="c-btn-all" class="all-btn" type="button" data-slot="C" aria-label="3つ目を全範囲にする"><span>全範囲</span></button><span class="time-sep-line"></span></div>
+    <div class="time-sep"><button id="c-btn-all" class="all-btn" type="button" data-slot="C" aria-label="3つ目を全範囲にする"><span>全範囲</span><span>選択</span></button><span class="time-sep-line"></span></div>
     <div id="c-row-end" class="time-row">
       <button id="c-btn-mark-end" class="mark-btn" type="button" data-slot="C" data-mark="end" aria-label="今の位置を終了にする"><span>ここを</span><span>終了</span></button>
       <div class="digits">

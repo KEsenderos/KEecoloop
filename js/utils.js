@@ -1,4 +1,4 @@
-/* js/utils.js / 時間の変換・計算・保存の補助（RE.Utils） / 仕様書 v3.1.1 9.1章 / 版 3.1.1 */
+/* js/utils.js / 時間の変換・計算・保存の補助（RE.Utils） / 仕様書 v3.1.2 9.1章 / 版 3.1.2 */
 (function () {
   'use strict';
   var C = RE.Config;

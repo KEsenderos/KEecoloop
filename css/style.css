@@ -1,4 +1,4 @@
-/* css/style.css / KEecoloop 見た目 / 仕様書 v3.1.1 4章 */
+/* css/style.css / KEecoloop 見た目 / 仕様書 v3.1.2 4章 */
 :root {
   --bg: #0C1016;
   --surface: #131922;
@@ -25,9 +25,12 @@
   --danger: #FF4D4D;
   --tab-h: 56px;
   --dock-h: 76px;
-  --pane-a: #0F141C;
-  --pane-b: #0F1815;
-  --pane-c: #151220;
+  --pane-a: #14263F;
+  --pane-b: #123524;
+  --pane-c: #301A42;
+  --all: #7CC8FF;
+  --all-pressed: #55AEEB;
+  --all-ink: #08202F;
   --mode: #6AA9FF;
   --mode-bg: #14233A;
   --mode-ink: #0A1626;
@@ -370,3 +373,20 @@ body.kb-open .dock, body.kb-open .tab-bar { display: none; }
 .move-demo { display: flex; align-items: center; gap: 12px; }
 .next-btn-demo { flex: none; width: 150px; pointer-events: none; }
 .move-demo-text { font-size: 12px; line-height: 1.5; color: var(--sub); }
+
+/* ---- v3.1.2: 全範囲選択を見やすく／再生OFFのボタンを目立たせる／パネルの色を濃く ---- */
+.all-btn {
+  width: 40px; height: 46px; border-radius: 10px; border: 0; background: var(--all); color: var(--all-ink);
+  flex-direction: column; font-size: 11px; font-weight: 700; line-height: 1.25; text-align: center;
+}
+.all-btn.pressed, .all-btn:active { background: var(--all-pressed); }
+.all-btn:disabled { opacity: 0.4; }
+.play-toggle { height: 32px; padding: 0 14px; border-radius: 16px; font-size: 13px; border: 0; background: var(--mode); color: var(--mode-ink); }
+.play-toggle.on { border: 1.5px solid var(--mode); background: var(--mode-bg); color: var(--mode); }
+.play-toggle.pressed, .play-toggle:active { background: #4A8FE0; color: var(--mode-ink); }
+.play-row.off { opacity: 1; }
+.play-row.off .play-label, .play-row.off .play-range, .play-row.off .play-name, .play-row.off .play-pos,
+.play-row.off .play-bar, .play-row.off .play-eject { opacity: 0.55; }
+#play-row-a { background: var(--pane-a); }
+#play-row-b { background: var(--pane-b); }
+#play-row-c { background: var(--pane-c); }
