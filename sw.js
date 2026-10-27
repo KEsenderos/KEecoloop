@@ -1,8 +1,8 @@
-/* sw.js / サービスワーカー（アプリ本体のキャッシュ） / 仕様書 v3.1.0 9.7章
+/* sw.js / サービスワーカー（アプリ本体のキャッシュ） / 仕様書 v3.1.1 9.7章
  * CACHE_VERSION は js/config.js の APP_VERSION と同じ値にする。 */
 'use strict';
 
-var CACHE_VERSION = '3.1.0';
+var CACHE_VERSION = '3.1.1';
 var CACHE_NAME = 're-cache-' + CACHE_VERSION;
 var APP_SHELL_FILES = [
   './',
@@ -25,7 +25,15 @@ var APP_SHELL_FILES = [
 
 self.addEventListener('install', function (event) {
   event.waitUntil(
-    caches.open(CACHE_NAME).then(function (cache) { return cache.addAll(APP_SHELL_FILES); })
+    caches.open(CACHE_NAME).then(function (cache) {
+      // 公開先（GitHub Pages）が古いファイルを一時的に覚えていても拾わないよう、必ずネットから取り直す
+      return Promise.all(APP_SHELL_FILES.map(function (u) {
+        return fetch(new Request(u, { cache: 'reload' })).then(function (res) {
+          if (!res.ok) throw new Error('FETCH_' + res.status);
+          return cache.put(u, res);
+        });
+      }));
+    })
       .then(function () { return self.skipWaiting(); })
   );
 });
